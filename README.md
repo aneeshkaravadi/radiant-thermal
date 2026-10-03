@@ -1,77 +1,62 @@
 # radiant-thermal
 
-**One surface energy balance, three uses: coatings and wraps, outdoor batteries dispatched on real ERCOT prices, and spacecraft radiators.**
-
 [![tests](https://github.com/aneeshkaravadi/radiant-thermal/actions/workflows/ci.yml/badge.svg)](https://github.com/aneeshkaravadi/radiant-thermal/actions/workflows/ci.yml)
 
-![Battery temperature distribution by coating](docs/figures/battery_summer_hist.png)
+Does the paint colour of an outdoor home battery matter, in dollars? I live in North Texas, where batteries sit outside in summer sun and the grid's prices spike on the hottest afternoons, so I wanted to see whether those two things interact. They do.
 
-## What this shows
+![Battery temperature over the summer](docs/figures/battery_summer_hist.png)
 
-I simulated a passive 20 kWh / 5 kW outdoor battery enclosure through **every hour of 2025 in Dallas**. It was dispatched against **real ERCOT North-zone day-ahead prices** by a daily linear program. Its cell temperature fed back into a battery-management derating rule (full power below 45 °C, none at 55 °C).
+## What I simulated
 
-| Enclosure skin | Summer mean cell temp | Hours derated | Calendar-aging rate vs 25 °C | 2025 arbitrage revenue |
+A generic 20 kWh, 5 kW battery in a passive outdoor enclosure, run through every hour of 2025 in Dallas. All of the inputs are real data:
+
+- **weather:** hourly temperature, dew point, sunlight, wind and cloud cover from Open-Meteo
+- **prices:** ERCOT's 2025 day-ahead prices for the North load zone, pulled with gridstatus
+
+Each day a small linear program decides when to charge and discharge to make the most money. The enclosure is a two-node thermal model (the steel skin and the battery inside), and the skin trades heat with the sun, the sky and the air. When the cells pass 45 °C the battery management system starts cutting power, which means less to sell, so I feed that derating back into the dispatch and run it again.
+
+## What came out
+
+| Skin | Summer avg cell temp | Hours derated | Aging rate vs 25 °C | 2025 revenue |
 |---|---|---|---|---|
-| dark grey paint (α 0.75) | 42.3 °C | 1,195 | 2.29× | $264 |
-| white paint (α 0.25) | 40.7 °C | 339 | 2.01× | $304 |
-| ideal radiative cooler (α 0.04, ε 0.95) | 39.7 °C | 208 | 1.88× | $312 |
+| dark grey paint | 42.3 °C | 1,195 | 2.29× | $264 |
+| white paint | 40.7 °C | 339 | 2.01× | $304 |
+| ideal radiative cooler | 39.7 °C | 208 | 1.88× | $312 |
 
-The unconstrained arbitrage upper bound is **$319**. Painting the box white instead of dark grey recovers $40 of that per unit per year. It also slows Arrhenius calendar aging by 12% and cuts derated hours by 72%.
+If the battery never had to derate it would make $319, so the dark box loses about $56 of that and the white box about $16. White paint is worth roughly $40 per battery per year here, plus 12% slower calendar aging, which isn't nothing across a fleet.
 
-The reason is in one plot: the battery runs hottest in exactly the hours when ERCOT prices spike.
+The reason is easiest to see in one week of August: the cells are hottest right when prices peak, which is exactly when you most want the battery at full power.
 
 ![ERCOT week](docs/figures/ercot_week.png)
 
-### Does a wrap or laminate help?
+## Wraps and laminates
 
-For an **opaque** enclosure, a film or wrap laminated over white paint only helps if it reflects more sunlight than it absorbs. The stack model sums the light bouncing between film and substrate, and the design map shows the break-even line against plain white paint:
+I also expected that laminating a film or wrap over a white enclosure could help, and mostly it can't. Sunlight that passes through the film bounces between it and the paint, so I summed those bounces as a geometric series. The result is that on an opaque box, only a film that absorbs almost no sunlight beats plain white paint, and anything that absorbs UV or near-infrared makes it worse.
 
-<img src="docs/figures/laminate_design_map.png" width="60%">
+<img src="docs/figures/laminate_design_map.png" width="55%">
 
-Only laminates that barely absorb sunlight beat plain white. Anything that absorbs UV or near-IR adds heat to an opaque box.
+## Same equation, in orbit
 
-### Same physics in orbit
+A spacecraft radiator is the same energy balance with no atmosphere and no air, just sunlight, Earth's infrared and reflected sunlight coming in against $\varepsilon\sigma T^4$ going out. At 300 K in a hot low-Earth-orbit case, an optical solar reflector needs about 4.1 m² per kW, white paint 5.3, and black paint can't get rid of heat at all, which my first version reported as a literal infinity in the results file.
 
-A spacecraft radiator balances $\varepsilon\sigma T^4$ against absorbed sunlight, Earth infrared and albedo, the same two numbers (α, ε) with no atmosphere. At 300 K in the LEO hot case, an optical solar reflector needs 4.1 m² per kW and white paint 5.3 m². Black paint cannot reject heat at all.
+<img src="docs/figures/radiator_area.png" width="85%">
 
-<img src="docs/figures/radiator_area.png" width="90%">
+## Mistakes and fixes
 
-## Checks
+- I first pulled the weather in local time while the ERCOT prices came timezone-aware, and around daylight saving those two don't line up hour for hour. Everything is in UTC now, and a test checks the two files match row for row.
+- My first pass didn't feed derating back into dispatch, so it counted revenue the battery couldn't actually earn while it was hot.
+- My first "energy balance" test only checked that the temperatures came out finite, which doesn't prove anything. I replaced it with one that holds the weather constant and checks that the battery settles exactly where the heat it conducts out equals the heat it generates.
 
-9 tests in CI, including:
-- the Berdahl–Martin sky emissivity formula
-- a black body in overcast darkness sitting exactly at air temperature
-- the laminate stack's limits (invisible film, black film and mirror film behave correctly)
-- the enclosure settling to the analytic steady state
-- dispatch respecting state-of-charge and power limits, with a power cap reducing revenue
-- the radiator closed form
-- the real weather and price files aligning hour-for-hour in UTC
-
-## Quick start
+## Running it
 
 ```bash
-git clone https://github.com/aneeshkaravadi/radiant-thermal && cd radiant-thermal
 pip install -e ".[dev]"
 pytest -q
-python examples/make_figures.py      # ~30 s, writes docs/figures and docs/results.json
+python examples/make_figures.py
 ```
 
-## How it works
+The enclosure numbers describe a generic passive unit, not anyone's product. Real units with fans or active cooling run cooler, so the differences between skins are the result, not the absolute temperatures. Assumptions and derivations are in [DERIVATIONS.md](DERIVATIONS.md), and data sources are in [data/README.md](data/README.md).
 
-| Module | What it does |
-|---|---|
-| `radiative.py` | Sky emissivity from dew point and cloud cover, surface energy balance, laminate-on-substrate optics |
-| `enclosure.py` | Two-node (skin, battery) transient model on hourly weather; Arrhenius aging; BMS derating |
-| `dispatch.py` | Daily perfect-foresight arbitrage LP on ERCOT prices, with optional per-hour power caps |
-| `radiator.py` | Spacecraft radiator area and equilibrium temperature in LEO or deep space |
+---
 
-Derivations and assumptions are in [DERIVATIONS.md](DERIVATIONS.md); data sources are in [data/README.md](data/README.md).
-
-> [!NOTE]
-> The enclosure parameters describe a generic passive unit, not any company's product. Real units with active cooling run cooler. The *differences* between coatings are the result, not the absolute temperatures.
-
-## About
-
-Built by **Aneesh Karavadi**, an engineering student at the University of North Texas (TAMS). I used **Claude Code** as a pair programmer. The modelling choices and conclusions are mine to defend.
-
-Separately, I'm an undergraduate researcher in Dr. Zihao Richard Zhang's lab at UNT, testing transparent UV/IR-blocking radiative-cooling films. That work isn't part of this repo. A potential application would be adding a window solar-heat-gain model here, where a transparent film's UV and near-IR blocking is the whole point.
+Aneesh Karavadi, engineering at UNT (TAMS). Separately from this repo, I'm an undergraduate researcher in Dr. Zihao Richard Zhang's lab at UNT, testing transparent UV/IR-blocking radiative-cooling films. A window solar-heat-gain model would be a natural place to apply that kind of film here someday. I used Claude Code to write a lot of the implementation, but the questions and conclusions are mine.
