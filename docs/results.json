@@ -1,0 +1,53 @@
+{
+  "dispatch_unconstrained_usd": 319.3,
+  "coatings": {
+    "dark grey paint": {
+      "alpha": 0.75,
+      "eps": 0.9,
+      "summer_mean_batt_C": 42.33,
+      "max_batt_C": 55.5,
+      "aging_rate_vs_25C": 2.288,
+      "hours_derated": 1195,
+      "revenue_usd": 263.5
+    },
+    "white paint": {
+      "alpha": 0.25,
+      "eps": 0.9,
+      "summer_mean_batt_C": 40.68,
+      "max_batt_C": 48.7,
+      "aging_rate_vs_25C": 2.009,
+      "hours_derated": 339,
+      "revenue_usd": 303.6
+    },
+    "ideal radiative cooler": {
+      "alpha": 0.04,
+      "eps": 0.95,
+      "summer_mean_batt_C": 39.74,
+      "max_batt_C": 46.9,
+      "aging_rate_vs_25C": 1.883,
+      "hours_derated": 208,
+      "revenue_usd": 312.1
+    }
+  },
+  "white_vs_dark": {
+    "summer_mean_drop_C": 1.65,
+    "aging_rate_reduction_pct": 12.2,
+    "derated_hours": [
+      1195,
+      339
+    ]
+  },
+  "laminate_map_note": "black contour = no change vs plain white paint; laminate emissivity 0.93",
+  "radiator_m2_per_kW_at_300K": {
+    "LEO, sun-shaded, Earth view 0.3": {
+      "optical solar reflector": 3.32,
+      "white thermal-control paint": 3.08,
+      "black paint": 4.44
+    },
+    "LEO hot case, sun 60 deg off normal, Earth view 0.3": {
+      "optical solar reflector": 4.06,
+      "white thermal-control paint": 5.3,
+      "black paint": "cannot reject heat"
+    }
+  }
+}

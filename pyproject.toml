@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radiant-thermal"
+version = "0.1.0"
+description = "Radiative-cooling coatings, outdoor battery enclosures dispatched on real ERCOT prices, and spacecraft radiators: one surface-energy-balance model."
+authors = [{ name = "Aneesh Karavadi" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "matplotlib>=3.8", "pandas>=2.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
