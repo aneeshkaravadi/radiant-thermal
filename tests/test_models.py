@@ -71,9 +71,10 @@ def test_dispatch_respects_limits_and_is_profitable():
     assert capped.revenue_usd < r.revenue_usd
 
 
-def test_real_data_files_align():
-    w = enc.Weather.from_csv(ROOT / "data/weather/dallas_2025_hourly.csv")
-    p = dp.load_prices(ROOT / "data/ercot/dam_2025_lz_north.csv")
+@pytest.mark.parametrize("city, zone", [("dallas", "lz_north"), ("houston", "lz_houston")])
+def test_real_data_files_align(city, zone):
+    w = enc.Weather.from_csv(ROOT / f"data/weather/{city}_2025_hourly.csv")
+    p = dp.load_prices(ROOT / f"data/ercot/dam_2025_{zone}.csv")
     assert len(w.Ta) == len(p) == 8760 and (w.time == p.index).all()
 
 

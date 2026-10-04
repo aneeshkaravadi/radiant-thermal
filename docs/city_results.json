@@ -1,0 +1,52 @@
+{
+  "Dallas (LZ_NORTH)": {
+    "upper_bound_usd": 319.3,
+    "summer_mean_air_C": 28.9,
+    "summer_mean_dew_point_C": 20.99,
+    "skins": {
+      "dark grey paint": {
+        "summer_mean_batt_C": 42.33,
+        "hours_derated": 1195,
+        "aging_rate_vs_25C": 2.288,
+        "revenue_usd": 263.5
+      },
+      "white paint": {
+        "summer_mean_batt_C": 40.68,
+        "hours_derated": 339,
+        "aging_rate_vs_25C": 2.009,
+        "revenue_usd": 303.6
+      },
+      "ideal radiative cooler": {
+        "summer_mean_batt_C": 39.74,
+        "hours_derated": 208,
+        "aging_rate_vs_25C": 1.883,
+        "revenue_usd": 312.1
+      }
+    }
+  },
+  "Houston (LZ_HOUSTON)": {
+    "upper_bound_usd": 290.4,
+    "summer_mean_air_C": 28.21,
+    "summer_mean_dew_point_C": 23.56,
+    "skins": {
+      "dark grey paint": {
+        "summer_mean_batt_C": 42.51,
+        "hours_derated": 1308,
+        "aging_rate_vs_25C": 2.473,
+        "revenue_usd": 241.8
+      },
+      "white paint": {
+        "summer_mean_batt_C": 41.09,
+        "hours_derated": 399,
+        "aging_rate_vs_25C": 2.191,
+        "revenue_usd": 277.5
+      },
+      "ideal radiative cooler": {
+        "summer_mean_batt_C": 40.1,
+        "hours_derated": 259,
+        "aging_rate_vs_25C": 2.055,
+        "revenue_usd": 284.2
+      }
+    }
+  }
+}

@@ -29,6 +29,12 @@ The reason is easiest to see in one week of August: the cells are hottest right 
 
 ![ERCOT week](docs/figures/ercot_week.png)
 
+## Dallas vs Houston
+
+I reran everything for Houston with its own 2025 weather and its own ERCOT load-zone prices (`examples/compare_cities.py`). I expected Houston to be easier on the batteries, since its summer air was actually 0.7 °C cooler than Dallas's. It wasn't: the dark box derated for 1,308 hours against 1,195 in Dallas, and aged faster too. The difference is humidity. Houston's summer dew point averages 23.6 °C against 21.0 °C in Dallas, and water vapour closes the sky's infrared window, so the enclosure can't radiate heat away as well at night or during the day. Air temperature alone would have told the wrong story.
+
+<img src="docs/figures/city_comparison.png" width="80%">
+
 ## Wraps and laminates
 
 I also expected that laminating a film or wrap over a white enclosure could help, and mostly it can't. Sunlight that passes through the film bounces between it and the paint, so I summed those bounces as a geometric series. The result is that on an opaque box, only a film that absorbs almost no sunlight beats plain white paint, and anything that absorbs UV or near-infrared makes it worse.
