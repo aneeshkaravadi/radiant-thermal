@@ -65,4 +65,4 @@ The enclosure numbers describe a generic passive unit, not anyone's product. Rea
 
 ---
 
-Aneesh Karavadi, engineering at UNT (TAMS). Separately from this repo, I'm an undergraduate researcher in Dr. Zihao Richard Zhang's lab at UNT, testing transparent UV/IR-blocking radiative-cooling films. A window solar-heat-gain model would be a natural place to apply that kind of film here someday. I used Claude Code to write a lot of the implementation, but the questions and conclusions are mine.
+Aneesh Karavadi, engineering at UNT (TAMS). Separately from this repo, I'm an undergraduate researcher at UNT, testing transparent UV/IR-blocking radiative-cooling films. A window solar-heat-gain model would be a natural place to apply that kind of film here someday. I used Claude Code to write a lot of the implementation, but the questions and conclusions are mine.
