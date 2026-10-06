@@ -54,6 +54,47 @@ def test_enclosure_settles_to_steady_state():
     assert e.ua_internal * (r.T_batt[-1] - r.T_skin[-1]) == pytest.approx(200.0, rel=0.01)
 
 
+def constant_weather(n, Ta, ghi=0.0, dew=15.0):
+    t = pd.date_range("2025-07-01", periods=n, freq="h", tz="UTC")
+    return enc.Weather(t, np.full(n, Ta), np.full(n, dew), np.full(n, ghi), np.full(n, 2.0), np.zeros(n))
+
+
+def test_fan_that_never_starts_changes_nothing():
+    w = constant_weather(48, 305.0, ghi=400.0)
+    q = np.full(48, 200.0)
+    plain = enc.simulate(rad.WHITE_PAINT, w, q)
+    idle = enc.simulate(rad.WHITE_PAINT, w, q, fan=enc.Fan(on_c=200.0, off_c=199.0))
+    assert np.array_equal(plain.T_batt, idle.T_batt) and not idle.fan_on.any()
+
+
+def test_running_fan_balances_conduction_and_ventilation():
+    """A fan that's always on: at steady state the load leaves through the skin and the air stream."""
+    w = constant_weather(72, 300.0)
+    fan = enc.Fan(on_c=-100.0, off_c=-101.0)
+    e = enc.Enclosure()
+    r = enc.simulate(rad.WHITE_PAINT, w, np.full(72, 400.0), e, fan=fan)
+    out = e.ua_internal * (r.T_batt[-1] - r.T_skin[-1]) + fan.ua * (r.T_batt[-1] - 300.0)
+    assert out == pytest.approx(400.0, rel=0.01)
+    assert r.fan_on[-1] == 1.0 and r.fan_energy_kwh(fan)[-1] == pytest.approx(fan.power_w / 1000)
+
+
+def test_fan_thermostat_holds_the_cells_in_its_band():
+    """Cool air and a load that would take the cells to ~45 C passive: the fan cycles between its set points."""
+    w = constant_weather(96, 293.15)
+    fan = enc.Fan()
+    r = enc.simulate(rad.WHITE_PAINT, w, np.full(96, 300.0), fan=fan)
+    late = slice(48, None)
+    assert r.celsius()[late].min() > fan.off_c - 0.1 and r.celsius()[late].max() < fan.on_c + 0.1
+    assert 0.1 < r.fan_on[late].mean() < 0.9
+
+
+def test_fan_does_not_blow_in_hotter_air():
+    """Air at 47 C and no load: the cells stay below the air, so the fan never runs even above its set point."""
+    w = constant_weather(24, 320.0)
+    r = enc.simulate(rad.WHITE_PAINT, w, np.zeros(24), fan=enc.Fan())
+    assert r.celsius().max() > enc.Fan().on_c and not r.fan_on.any()
+
+
 def test_arrhenius_reference():
     assert enc.arrhenius_factor(298.15) == pytest.approx(1.0)
     assert enc.arrhenius_factor(308.15) > 1.5  # ~1.9x per 10 K at 50 kJ/mol

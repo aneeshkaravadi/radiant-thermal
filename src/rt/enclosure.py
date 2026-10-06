@@ -8,6 +8,10 @@ The coating only enters through alpha and eps on the skin. Everything else is
 the same for each design, so differences in battery temperature come from the
 coating alone. Parameters describe a generic ~20 kWh wall/ground unit and are
 illustrative, not any company's product.
+
+An optional ventilation fan pulls outside air past the cells when they get warm:
+
+    battery:  ... - eff * rho cp Vdot * (Tb - Ta)     while the fan runs
 """
 from __future__ import annotations
 
@@ -27,6 +31,29 @@ class Enclosure:
     ua_internal: float = 12.0  # W/K, battery <-> skin conductance
     sky_view: float = 0.75  # box: top sees all sky, walls half
     sun_factor: float = 0.55  # mean projected-area fraction of the skin facing the sun, x GHI
+
+
+@dataclass
+class Fan:
+    """Ventilation fan pulling outside air past the cells, switched by a thermostat on the cells.
+
+    With the fan running, the cells lose  eff * rho cp Vdot * (Tb - Ta)  to the air stream,
+    where eff is how close the exhaust air gets to the cell temperature. It turns on above
+    ``on_c`` and off below ``off_c`` (the gap stops it chattering), and only while the
+    outside air is cooler than the cells, since blowing in hotter air would heat them.
+    It draws ``power_w`` while running.
+    """
+
+    flow_m3_s: float = 0.05  # about 100 cfm
+    effectiveness: float = 0.5
+    power_w: float = 30.0
+    on_c: float = 35.0
+    off_c: float = 32.0
+
+    @property
+    def ua(self) -> float:
+        """Conductance from the cells to outside air while running, W/K (air at about 30 C)."""
+        return self.effectiveness * 1.16 * 1007.0 * self.flow_m3_s
 
 
 @dataclass
@@ -51,32 +78,45 @@ class ThermalResult:
     T_skin: np.ndarray  # K, hourly
     T_batt: np.ndarray  # K, hourly
     T_air: np.ndarray
+    fan_on: np.ndarray | None = None  # fraction of each hour the fan ran
+
+    def fan_energy_kwh(self, fan: Fan) -> np.ndarray:
+        """Fan electricity in each hour, kWh."""
+        return np.zeros_like(self.T_air) if self.fan_on is None else self.fan_on * fan.power_w / 1000.0
 
     def celsius(self, which="batt"):
         return (self.T_batt if which == "batt" else self.T_skin) - 273.15
 
 
 def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclosure = Enclosure(),
-             substeps: int = 60) -> ThermalResult:
+             substeps: int = 60, fan: Fan | None = None) -> ThermalResult:
     """Explicit integration with 1-minute substeps (stable: skin time constant is ~20 min)."""
     n = len(weather.Ta)
     dt = 3600.0 / substeps
     eps_sky = sky_emissivity(weather.dew_c, weather.cloud)
     h = convection_coefficient(weather.wind)
     Ts = Tb = weather.Ta[0]
-    out_s, out_b = np.empty(n), np.empty(n)
+    out_s, out_b, out_fan = np.empty(n), np.empty(n), np.zeros(n)
     a, e, F = coating.alpha_solar, coating.eps_ir, enc.sky_view
+    running = False
     for i in range(n):
         Ta, G, es, hi, q = weather.Ta[i], weather.ghi[i], eps_sky[i], h[i], q_gen_w[i]
         incoming = a * enc.sun_factor * G + e * (F * es + (1 - F)) * SIGMA * Ta**4
+        on_steps = 0
         for _ in range(substeps):
+            if fan is not None:
+                Tc = Tb - 273.15
+                running = (Tc > fan.off_c) if running else (Tc > fan.on_c)
+                running = running and Ta < Tb
+                on_steps += running
             q_int = enc.ua_internal * (Tb - Ts)
+            q_fan = fan.ua * (Tb - Ta) if running else 0.0
             dTs = (enc.area * (incoming - e * SIGMA * Ts**4 - hi * (Ts - Ta)) + q_int) / enc.skin_heat_capacity
-            dTb = (q - q_int) / enc.battery_heat_capacity
+            dTb = (q - q_int - q_fan) / enc.battery_heat_capacity
             Ts += dTs * dt
             Tb += dTb * dt
-        out_s[i], out_b[i] = Ts, Tb
-    return ThermalResult(weather.time, out_s, out_b, weather.Ta)
+        out_s[i], out_b[i], out_fan[i] = Ts, Tb, on_steps / substeps
+    return ThermalResult(weather.time, out_s, out_b, weather.Ta, None if fan is None else out_fan)
 
 
 def arrhenius_factor(T_kelvin, Ea_j_mol: float = 50e3, T_ref: float = 298.15):
