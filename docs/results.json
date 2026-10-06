@@ -74,6 +74,114 @@
       }
     }
   },
+  "spectral": {
+    "selective white": {
+      "bands": [
+        0.95,
+        0.1
+      ],
+      "total_eps_at_300K": 0.374,
+      "broadband": {
+        "alpha": 0.25,
+        "eps": 0.9,
+        "summer_mean_batt_C": 40.68,
+        "max_batt_C": 48.7,
+        "aging_rate_vs_25C": 2.009,
+        "hours_derated": 339,
+        "revenue_usd": 303.6
+      },
+      "gray_model": {
+        "summer_mean_batt_C": 41.18,
+        "hours_derated": 535,
+        "revenue_usd": 293.1
+      },
+      "two_band_model": {
+        "summer_mean_batt_C": 40.83,
+        "hours_derated": 383,
+        "revenue_usd": 301.0
+      }
+    },
+    "selective ideal cooler": {
+      "bands": [
+        0.95,
+        0.05
+      ],
+      "total_eps_at_300K": 0.34,
+      "broadband": {
+        "alpha": 0.04,
+        "eps": 0.95,
+        "summer_mean_batt_C": 39.74,
+        "max_batt_C": 46.9,
+        "aging_rate_vs_25C": 1.883,
+        "hours_derated": 208,
+        "revenue_usd": 312.1
+      },
+      "gray_model": {
+        "summer_mean_batt_C": 40.31,
+        "hours_derated": 298,
+        "revenue_usd": 307.3
+      },
+      "two_band_model": {
+        "summer_mean_batt_C": 39.85,
+        "hours_derated": 218,
+        "revenue_usd": 311.5
+      }
+    },
+    "hottest_day_surface_minus_air_K": {
+      "white paint": [
+        0.0,
+        0.0,
+        -0.4,
+        -2.3,
+        -0.9,
+        -5.0,
+        -4.6,
+        -4.1,
+        1.0,
+        3.5,
+        5.9,
+        7.3,
+        9.0,
+        10.3,
+        9.9,
+        7.1,
+        5.4,
+        4.2,
+        1.8,
+        0.7,
+        -1.6,
+        -3.4,
+        -2.8,
+        -2.3
+      ],
+      "selective white": [
+        0.0,
+        0.0,
+        -0.6,
+        -3.0,
+        -1.2,
+        -6.5,
+        -6.0,
+        -5.3,
+        1.2,
+        4.2,
+        7.2,
+        9.1,
+        11.3,
+        13.1,
+        12.6,
+        8.5,
+        6.2,
+        4.7,
+        1.9,
+        0.7,
+        -2.1,
+        -4.2,
+        -3.4,
+        -2.7
+      ]
+    }
+  },
   "laminate_map_note": "black contour = no change vs plain white paint; laminate emissivity 0.93",
   "radiator_m2_per_kW_at_300K": {
     "LEO, sun-shaded, Earth view 0.3": {

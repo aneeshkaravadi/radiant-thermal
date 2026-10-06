@@ -51,6 +51,16 @@ I also expected that laminating a film or wrap over a white enclosure could help
 
 <img src="docs/figures/laminate_design_map.png" width="55%">
 
+## Emitting only through the window
+
+My skins were gray in the infrared, with one emissivity for every wavelength. But the sky is only partly transparent, mostly between 8 and 13 µm, and a lot of radiative-cooling research is about "selective" emitters that radiate strongly inside that window and reflect everywhere else. So I split the infrared into two bands, the window and everything else. Outside the window I treat the sky as black, and inside it I give the sky whatever emissivity keeps its total radiation equal to the Berdahl–Martin fit I was already using. That way a gray surface gets exactly the same answer as before, which the tests check, and only selective surfaces change.
+
+A selective version of white paint (0.95 inside the window, 0.10 outside, same solar absorptance) shows the classic trade on the hottest day of 2025. As an insulated surface it gets 1.5 K colder than white paint before sunrise, but 2.8 K hotter at 1 pm. The battery box is warmer than the air most of the time, so it's on the wrong side of that trade: 383 hours derated against 339 for plain white paint.
+
+The bigger surprise was how wrong the one-band model is for a surface like that. A total-emissivity measurement at room temperature would call the selective coating 0.37, and the gray model with 0.37 says it derates 535 hours, more than four times the real penalty. Knowing only a coating's total emissivity, you can't tell a good selective emitter from a poor emitter.
+
+<img src="docs/figures/selective_emitters.png" width="90%">
+
 ## Same equation, in orbit
 
 A spacecraft radiator is the same energy balance with no atmosphere and no air, just sunlight, Earth's infrared and reflected sunlight coming in against $\varepsilon\sigma T^4$ going out. At 300 K in a hot low-Earth-orbit case, an optical solar reflector needs about 4.1 m² per kW, white paint 5.3, and black paint can't get rid of heat at all, which my first version reported as a literal infinity in the results file.

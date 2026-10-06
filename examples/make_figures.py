@@ -134,6 +134,53 @@ fig.suptitle(f"A {fan.power_w:.0f} W, {fan.flow_m3_s * 2119:.0f} cfm fan (on at 
              "the paint matters much less once it's running", fontsize=10)
 save(fig, "fan_cooling.png")
 
+# ------------------------------------------------------------------ 2c. selective emitters, gray vs two-band
+sel_white = rad.selective_coating("selective white", rad.WHITE_PAINT.alpha_solar, 0.95, 0.10, "hypothetical")
+sel_ideal = rad.selective_coating("selective ideal cooler", rad.IDEAL_COOLER.alpha_solar, 0.95, 0.05, "hypothetical")
+
+
+def run_box(c, spectral):
+    th = enc.simulate(c, w, q, spectral=spectral)
+    d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
+    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way), spectral=spectral)
+    return {"summer_mean_batt_C": round(float(th2.celsius()[summer].mean()), 2),
+            "hours_derated": int((enc.derate_fraction(th2.T_batt) < 1).sum()), "revenue_usd": round(d2.revenue_usd, 1)}
+
+
+results["spectral"] = {}
+pairs = [(rad.WHITE_PAINT, sel_white), (rad.IDEAL_COOLER, sel_ideal)]
+for broad, sel in pairs:
+    results["spectral"][sel.name] = {"bands": list(sel.bands), "total_eps_at_300K": round(sel.eps_ir, 3),
+                                     "broadband": results["coatings"][broad.name] | {},
+                                     "gray_model": run_box(sel, False), "two_band_model": run_box(sel, True)}
+day_idx = np.where(day)[0]
+surf = {c.name: [rad.steady_surface_temperature(c, w.Ta[i], w.ghi[i], eps_sky[i], h[i], spectral=True) - w.Ta[i]
+                 for i in day_idx] for c in (rad.WHITE_PAINT, sel_white)}
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.9))
+for name, dT in surf.items():
+    axes[0].plot(local[day].hour, dT, marker="o", ms=3, label=name)
+axes[0].axhline(0, color="k", lw=0.8)
+axes[0].set_xlabel("hour (Central time)")
+axes[0].set_ylabel("insulated surface minus air (K)")
+axes[0].set_title(f"{local[day][0]:%b %d}, both with solar absorptance 0.25", fontsize=9)
+axes[0].legend(fontsize=8)
+labels, vals, colors = [], [], []
+short = {rad.WHITE_PAINT.name: "white\npaint", rad.IDEAL_COOLER.name: "ideal\ncooler"}
+for broad, sel in pairs:
+    r = results["spectral"][sel.name]
+    labels += [short[broad.name], "selective\n(gray\nmodel)", "selective\n(two-band)"]
+    vals += [results["coatings"][broad.name]["hours_derated"], r["gray_model"]["hours_derated"],
+             r["two_band_model"]["hours_derated"]]
+    colors += ["C0", "C7", "C1"]
+axes[1].bar(range(len(vals)), vals, color=colors)
+axes[1].set_xticks(range(len(vals)), labels, fontsize=7.5)
+axes[1].set_ylabel("battery hours derated, 2025")
+axes[1].set_title("a box that runs warm wants to emit in every band", fontsize=9)
+fig.suptitle("Selective emitters (0.95 inside 8-13 um, 0.05-0.10 outside): colder at night, worse for a warm box,\n"
+             "and the one-band (gray) model badly underrates them", fontsize=10)
+save(fig, "selective_emitters.png")
+results["spectral"]["hottest_day_surface_minus_air_K"] = {k: [round(v, 1) for v in dT] for k, dT in surf.items()}
+
 # ------------------------------------------------------------------ 3. film design map
 A_vals = np.linspace(0.0, 0.40, 9)
 R_vals = np.linspace(0.0, 0.40, 9)

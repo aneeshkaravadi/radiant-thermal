@@ -28,6 +28,18 @@ $$\varepsilon_\text{clear} = 0.711 + 0.56\left(\frac{T_{dp}}{100}\right) + 0.73\
 
 Humid air closes the window (more water vapor emission), so the formula rises with dew point. Clouds are treated as near-black emitters at air temperature covering a fraction $c$ of the sky: $\varepsilon_\text{sky} = c + (1-c)\,\varepsilon_\text{clear}$.
 
+**Splitting out the window (`radiative.net_heat_out_spectral`).** The share of a blackbody's emission at temperature $T$ that falls between 8 and 13 µm is $f_w(T) = F(13T) - F(8T)$, where $F(\lambda T)$ is the exact series
+
+$$F(\lambda T) = \frac{15}{\pi^4}\sum_{n=1}^{\infty} \frac{e^{-nz}}{n}\left(z^3 + \frac{3z^2}{n} + \frac{6z}{n^2} + \frac{6}{n^3}\right), \qquad z = \frac{C_2}{\lambda T}$$
+
+(checked against direct integration of Planck's law). At 300 K the window holds 32% of the emission. Outside the window, water vapor and CO₂ make the sky nearly black, so I take its emissivity there as 1. Inside, it gets the emissivity that keeps the total at the Berdahl–Martin value:
+
+$$\varepsilon_\text{in} = 1 - \frac{1 - \varepsilon_\text{sky}}{f_w(T_a)}$$
+
+In very dry air that would go negative. Then the window is fully clear ($\varepsilon_\text{in} = 0$) and the outside band takes the rest, $\varepsilon_\text{out} = \varepsilon_\text{sky}/(1 - f_w)$. A surface with emissivities $e_\text{in}$ and $e_\text{out}$ then emits $\sigma T_s^4[e_\text{in} f_w(T_s) + e_\text{out}(1 - f_w(T_s))]$ and absorbs from the sky $\sigma T_a^4[e_\text{in}\varepsilon_\text{in} f_w(T_a) + e_\text{out}\varepsilon_\text{out}(1 - f_w(T_a))]$.
+
+**Checks:** with $e_\text{in} = e_\text{out}$ both sums collapse to the gray formula, because the bands add back up to the total. The tests confirm that for dew points from −15 to 24 °C and in a full enclosure run. A selective surface stagnates colder than a broadband one at night but rejects less heat once it's warmer than the air (`tests/test_models.py`).
+
 ## 3. A laminate or wrap over a substrate (`Film.on`)
 
 A film with solar reflectance $R_f$, transmittance $T_f$ and absorptance $A_f = 1 - R_f - T_f$ sits on a substrate with absorptance $\alpha_s$. Follow one unit of sunlight:
@@ -95,7 +107,7 @@ with $S = 1361$ W/m², Earth IR $q_{IR} \approx 237$ W/m², albedo $a \approx 0.
 
 ## Limitations
 
-- Band-averaged (gray) optics, not spectral. A spectral model would resolve the 8–13 µm window explicitly.
+- Two infrared bands, not a full spectrum. Taking the sky as black outside the 8–13 µm window ignores the partly clear 16–25 µm region in dry air, so it slightly understates the benefit of emitting there.
 - The enclosure is two lumped nodes with no internal gradients. The fan is a simple on/off ventilation fan, and there's no air conditioning or liquid cooling.
 - No soiling or UV degradation of coatings. Organic films degrade under space UV and atomic oxygen, so the radiator section uses standard spacecraft coatings.
-- One weather location, one year.
+- Two cities (Dallas and Houston), one year of weather and prices.
