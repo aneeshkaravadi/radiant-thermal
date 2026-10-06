@@ -59,8 +59,9 @@ def _solve_day(price: np.ndarray, b: Battery, power_cap: np.ndarray | None = Non
     return c, d, soc
 
 
-def dispatch(prices: pd.Series, b: Battery = Battery(), power_cap_kw: np.ndarray | None = None) -> DispatchResult:
+def dispatch(prices: pd.Series, b: Battery | None = None, power_cap_kw: np.ndarray | None = None) -> DispatchResult:
     """``prices`` indexed by hour start (tz-aware), $/MWh. ``power_cap_kw`` optionally limits each hour."""
+    b = Battery() if b is None else b
     t = pd.DatetimeIndex(prices.index)
     p = prices.to_numpy(float)
     C, D, S = np.zeros_like(p), np.zeros_like(p), np.zeros_like(p)

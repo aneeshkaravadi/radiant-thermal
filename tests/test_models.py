@@ -1,3 +1,4 @@
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -6,7 +7,8 @@ import pytest
 
 from rt import dispatch as dp
 from rt import enclosure as enc
-from rt import radiative as rad, radiator
+from rt import radiative as rad
+from rt import radiator
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,7 +41,7 @@ def test_blackbody_fraction_matches_planck_integration():
 
     for lam_t in (1500.0, 2898.0, 5000.0, 10000.0):
         edges = [100.0] + [e for e in (1000.0, 2000.0, 4000.0) if e < lam_t] + [lam_t]
-        direct = sum(quad(planck, lo, hi, epsabs=0, epsrel=1e-12, limit=500)[0] for lo, hi in zip(edges, edges[1:]))
+        direct = sum(quad(planck, lo, hi, epsabs=0, epsrel=1e-12, limit=500)[0] for lo, hi in pairwise(edges))
         assert rad.blackbody_fraction(lam_t) == pytest.approx(direct / rad.SIGMA, abs=1e-6)
     assert rad.blackbody_fraction(2898.0) == pytest.approx(0.25, abs=1e-3)  # a quarter lies below the peak
 

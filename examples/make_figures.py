@@ -13,7 +13,8 @@ import pandas as pd
 
 from rt import dispatch as dp
 from rt import enclosure as enc
-from rt import radiative as rad, radiator
+from rt import radiative as rad
+from rt import radiator
 
 ROOT = Path(__file__).resolve().parents[1]
 FIG = ROOT / "docs" / "figures"
@@ -232,7 +233,13 @@ axes[0].set_ylabel("radiator area per kW rejected (m^2)")
 axes[0].legend(fontsize=7)
 fig.suptitle("Radiator area depends on the same two numbers as a rooftop cooler: alpha and epsilon")
 save(fig, "radiator_area.png")
-results["radiator_m2_per_kW_at_300K"] = {env.name: {c.name: (lambda v: round(v, 2) if np.isfinite(v) else "cannot reject heat")(float(radiator.area_per_kw(c, env, 300.0)))
+
+
+def area_or_note(v):
+    return round(v, 2) if np.isfinite(v) else "cannot reject heat"
+
+
+results["radiator_m2_per_kW_at_300K"] = {env.name: {c.name: area_or_note(float(radiator.area_per_kw(c, env, 300.0)))
                                                      for c in space_coats} for env in (radiator.LEO_SHADED, radiator.LEO_HOT)}
 
 (ROOT / "docs" / "results.json").write_text(json.dumps(results, indent=2))

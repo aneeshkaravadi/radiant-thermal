@@ -25,7 +25,8 @@ CITIES = {
 SKINS = [rad.DARK_PAINT, rad.WHITE_PAINT, rad.IDEAL_COOLER]
 
 
-def run_city(weather_csv, price_csv, battery=dp.Battery()):
+def run_city(weather_csv, price_csv, battery=None):
+    battery = dp.Battery() if battery is None else battery
     w = enc.Weather.from_csv(ROOT / weather_csv)
     prices = dp.load_prices(ROOT / price_csv)
     assert (w.time == prices.index).all()

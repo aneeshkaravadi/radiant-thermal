@@ -20,8 +20,15 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .radiative import (SIGMA, Coating, convection_coefficient, sky_band_emissivities, sky_emissivity, window_fraction,
-                        window_fraction_fast)
+from .radiative import (
+    SIGMA,
+    Coating,
+    convection_coefficient,
+    sky_band_emissivities,
+    sky_emissivity,
+    window_fraction,
+    window_fraction_fast,
+)
 
 
 @dataclass
@@ -67,7 +74,7 @@ class Weather:
     cloud: np.ndarray  # 0..1
 
     @classmethod
-    def from_csv(cls, path) -> "Weather":
+    def from_csv(cls, path) -> Weather:
         d = pd.read_csv(path, parse_dates=["time"])
         return cls(pd.DatetimeIndex(d["time"]), d["temperature_2m"].to_numpy() + 273.15, d["dew_point_2m"].to_numpy(),
                    d["shortwave_radiation"].to_numpy(), d["wind_speed_10m"].to_numpy(), d["cloud_cover"].to_numpy() / 100.0)
@@ -89,13 +96,14 @@ class ThermalResult:
         return (self.T_batt if which == "batt" else self.T_skin) - 273.15
 
 
-def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclosure = Enclosure(),
+def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclosure | None = None,
              substeps: int = 60, fan: Fan | None = None, spectral: bool = False) -> ThermalResult:
     """Explicit integration with 1-minute substeps (stable: skin time constant is ~20 min).
 
     ``spectral=True`` splits the skin's infrared exchange at the 8-13 um window
     (see radiative.net_heat_out_spectral). It changes nothing for a gray coating.
     """
+    enc = Enclosure() if enc is None else enc
     n = len(weather.Ta)
     dt = 3600.0 / substeps
     eps_sky = sky_emissivity(weather.dew_c, weather.cloud)
