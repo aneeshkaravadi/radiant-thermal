@@ -10,6 +10,13 @@ The atmosphere is partly transparent between about 8 and 13 um, so the clear
 sky radiates like a body at Ta with emissivity below 1. A surface that reflects
 sunlight and emits strongly in the infrared can sit below air temperature in
 full sun. That is passive daytime radiative cooling.
+
+``net_heat_out`` treats the infrared as one gray band. ``net_heat_out_spectral``
+splits it at the 8-13 um window: the sky is taken as black outside the window
+and partly transparent inside it, with the window's emissivity set so the total
+still matches Berdahl & Martin. A gray surface gets exactly the same answer
+either way; a selective emitter (one that emits mainly inside the window) only
+gets the right answer from the two-band version.
 """
 from __future__ import annotations
 
@@ -39,12 +46,73 @@ def convection_coefficient(wind_speed):
     return 5.7 + 3.8 * np.asarray(wind_speed, float)
 
 
+C2 = 14387.77  # um K, second radiation constant hc/k
+WINDOW_UM = (8.0, 13.0)
+
+
+def blackbody_fraction(lam_t):
+    """Fraction of blackbody emission below wavelength x temperature ``lam_t`` (um K).
+
+    The exact series  F = (15/pi^4) sum_n e^(-n z)/n (z^3 + 3z^2/n + 6z/n^2 + 6/n^3),  z = C2/(lam T).
+    """
+    z = C2 / np.asarray(lam_t, float)
+    total = 0.0
+    for n in range(1, 40):
+        total = total + np.exp(-n * z) / n * (z**3 + 3 * z**2 / n + 6 * z / n**2 + 6 / n**3)
+    return 15.0 / np.pi**4 * total
+
+
+def window_fraction(T):
+    """Share of a blackbody's emission at temperature T (K) that falls inside the 8-13 um window."""
+    T = np.asarray(T, float)
+    return blackbody_fraction(WINDOW_UM[1] * T) - blackbody_fraction(WINDOW_UM[0] * T)
+
+
+_T_TABLE = np.arange(150.0, 450.0001, 0.05)
+_FW_TABLE = window_fraction(_T_TABLE)
+
+
+def window_fraction_fast(T: float) -> float:
+    """``window_fraction`` from a 0.05 K table, for the inner loop of the enclosure model."""
+    return float(np.interp(T, _T_TABLE, _FW_TABLE))
+
+
+def sky_band_emissivities(eps_sky_total, Ta):
+    """Sky emissivity (inside, outside) the 8-13 um window, keeping the total at ``eps_sky_total``.
+
+    Outside the window water vapor and CO2 make the sky nearly black, so it's taken as 1 there,
+    and the window gets whatever emissivity makes the band-weighted total match. In very dry air
+    that would go below zero; then the window is fully clear and the outside band takes the rest.
+    """
+    fw = window_fraction(Ta)
+    eps = np.asarray(eps_sky_total, float)
+    inside = np.clip(1.0 - (1.0 - eps) / fw, 0.0, 1.0)
+    outside = (eps - fw * inside) / (1.0 - fw)
+    return inside, outside
+
+
 @dataclass(frozen=True)
 class Coating:
     name: str
     alpha_solar: float  # solar absorptance (0.3-2.5 um)
-    eps_ir: float  # hemispherical thermal emissivity (~5-25 um)
+    eps_ir: float  # hemispherical thermal emissivity (~5-25 um), as a total-emissivity measurement at ~300 K reports
     source: str = ""
+    bands: tuple[float, float] | None = None  # (emissivity inside the 8-13 um window, outside it); None = gray
+
+    @property
+    def eps_bands(self) -> tuple[float, float]:
+        return (self.eps_ir, self.eps_ir) if self.bands is None else self.bands
+
+
+def selective_coating(name: str, alpha_solar: float, eps_window: float, eps_outside: float, source: str = "",
+                      T_ref: float = 300.0) -> Coating:
+    """A coating that emits ``eps_window`` inside 8-13 um and ``eps_outside`` elsewhere.
+
+    Its gray ``eps_ir`` is the total emissivity at ``T_ref``, what a total-emissivity
+    measurement would report, which is all the gray model gets to see.
+    """
+    fw = float(window_fraction(T_ref))
+    return Coating(name, alpha_solar, fw * eps_window + (1 - fw) * eps_outside, source, (eps_window, eps_outside))
 
 
 @dataclass(frozen=True)
@@ -87,14 +155,28 @@ def net_heat_out(Ts, coating: Coating, Ta, G, eps_sky, h, F_sky=1.0, Tg=None, su
     return emit - absorb_ir - absorb_sun + h * (Ts - Ta)
 
 
-def steady_surface_temperature(coating: Coating, Ta, G, eps_sky, h, **kw) -> float:
+def net_heat_out_spectral(Ts, coating: Coating, Ta, G, eps_sky, h, F_sky=1.0, Tg=None, sun_factor=1.0):
+    """``net_heat_out`` with the infrared split at the 8-13 um window (two bands)."""
+    Tg = Ta if Tg is None else Tg
+    e_in, e_out = coating.eps_bands
+    s_in, s_out = sky_band_emissivities(eps_sky, Ta)
+    fs, fa, fg = window_fraction(Ts), window_fraction(Ta), window_fraction(Tg)
+    emit = SIGMA * Ts**4 * (e_in * fs + e_out * (1 - fs))
+    sky = F_sky * SIGMA * Ta**4 * (e_in * s_in * fa + e_out * s_out * (1 - fa))
+    ground = (1 - F_sky) * SIGMA * Tg**4 * (e_in * fg + e_out * (1 - fg))
+    return emit - sky - ground - coating.alpha_solar * G * sun_factor + h * (Ts - Ta)
+
+
+def steady_surface_temperature(coating: Coating, Ta, G, eps_sky, h, spectral: bool = False, **kw) -> float:
     """Temperature (K) of an insulated surface (no heat from behind) in steady state."""
-    return brentq(lambda T: net_heat_out(T, coating, Ta, G, eps_sky, h, **kw), Ta - 60, Ta + 120)
+    f = net_heat_out_spectral if spectral else net_heat_out
+    return brentq(lambda T: f(T, coating, Ta, G, eps_sky, h, **kw), Ta - 60, Ta + 120)
 
 
-def cooling_power_at_ambient(coating: Coating, Ta, G, eps_sky, F_sky=1.0) -> float:
+def cooling_power_at_ambient(coating: Coating, Ta, G, eps_sky, F_sky=1.0, spectral: bool = False) -> float:
     """Radiative cooling power (W/m^2) with the surface held at air temperature (convection drops out)."""
-    return float(net_heat_out(Ta, coating, Ta, G, eps_sky, 0.0, F_sky=F_sky))
+    f = net_heat_out_spectral if spectral else net_heat_out
+    return float(f(Ta, coating, Ta, G, eps_sky, 0.0, F_sky=F_sky))
 
 
 # Representative coatings for comparison. Replace with datasheet values for real designs.

@@ -30,6 +30,44 @@ def test_reflective_emitter_cools_below_air_under_clear_sky():
     assert rad.cooling_power_at_ambient(rad.IDEAL_COOLER, 303.0, 0.0, 0.75) > 80  # night, clear: ~100 W/m^2
 
 
+def test_blackbody_fraction_matches_planck_integration():
+    from scipy.integrate import quad
+    c1 = 3.741771852e8  # W um^4 / m^2
+
+    def planck(x):
+        return c1 / (x**5 * np.expm1(rad.C2 / x))
+
+    for lam_t in (1500.0, 2898.0, 5000.0, 10000.0):
+        edges = [100.0] + [e for e in (1000.0, 2000.0, 4000.0) if e < lam_t] + [lam_t]
+        direct = sum(quad(planck, lo, hi, epsabs=0, epsrel=1e-12, limit=500)[0] for lo, hi in zip(edges, edges[1:]))
+        assert rad.blackbody_fraction(lam_t) == pytest.approx(direct / rad.SIGMA, abs=1e-6)
+    assert rad.blackbody_fraction(2898.0) == pytest.approx(0.25, abs=1e-3)  # a quarter lies below the peak
+
+
+@pytest.mark.parametrize("dew", [-15.0, 0.0, 12.0, 24.0])
+def test_two_band_model_gives_a_gray_surface_the_gray_answer(dew):
+    """The window split keeps the sky's total, so a gray surface sees no difference, even in dry air."""
+    eps_sky = rad.sky_emissivity(dew, 0.2)
+    for Ts in (285.0, 300.0, 330.0):
+        gray = rad.net_heat_out(Ts, rad.WHITE_PAINT, 300.0, 500.0, eps_sky, 6.0, F_sky=0.75, Tg=305.0)
+        two = rad.net_heat_out_spectral(Ts, rad.WHITE_PAINT, 300.0, 500.0, eps_sky, 6.0, F_sky=0.75, Tg=305.0)
+        assert two == pytest.approx(gray, rel=1e-9)
+
+
+def test_selective_emitter_runs_colder_below_ambient_but_cools_less_above_it():
+    """The classic trade: emitting only through the window keeps out the sky's other bands (colder stagnation),
+    but rejects less heat once the surface is warmer than the air."""
+    broad = rad.Coating("broadband", 0.05, 0.95)
+    sel = rad.selective_coating("selective", 0.05, 0.95, 0.05)
+    eps_sky = rad.sky_emissivity(10.0)
+    T_broad = rad.steady_surface_temperature(broad, 300.0, 0.0, eps_sky, 2.0, spectral=True)
+    T_sel = rad.steady_surface_temperature(sel, 300.0, 0.0, eps_sky, 2.0, spectral=True)
+    assert T_sel < T_broad < 300.0
+    hot = 320.0
+    assert (rad.net_heat_out_spectral(hot, sel, 300.0, 0.0, eps_sky, 0.0)
+            < rad.net_heat_out_spectral(hot, broad, 300.0, 0.0, eps_sky, 0.0))
+
+
 def test_film_stack_limits():
     sub = rad.Coating("s", 0.25, 0.9)
     clear = rad.Film("clear", 0.0, 1.0, 0.9).on(sub)
@@ -93,6 +131,14 @@ def test_fan_does_not_blow_in_hotter_air():
     w = constant_weather(24, 320.0)
     r = enc.simulate(rad.WHITE_PAINT, w, np.zeros(24), fan=enc.Fan())
     assert r.celsius().max() > enc.Fan().on_c and not r.fan_on.any()
+
+
+def test_two_band_enclosure_matches_the_gray_one_for_a_gray_skin():
+    w = constant_weather(48, 305.0, ghi=400.0, dew=18.0)
+    q = np.full(48, 200.0)
+    gray = enc.simulate(rad.WHITE_PAINT, w, q)
+    two = enc.simulate(rad.WHITE_PAINT, w, q, spectral=True)
+    assert two.T_batt == pytest.approx(gray.T_batt, abs=1e-9)
 
 
 def test_arrhenius_reference():

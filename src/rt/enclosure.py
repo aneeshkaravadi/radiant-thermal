@@ -20,7 +20,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .radiative import SIGMA, Coating, convection_coefficient, sky_emissivity
+from .radiative import (SIGMA, Coating, convection_coefficient, sky_band_emissivities, sky_emissivity, window_fraction,
+                        window_fraction_fast)
 
 
 @dataclass
@@ -89,8 +90,12 @@ class ThermalResult:
 
 
 def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclosure = Enclosure(),
-             substeps: int = 60, fan: Fan | None = None) -> ThermalResult:
-    """Explicit integration with 1-minute substeps (stable: skin time constant is ~20 min)."""
+             substeps: int = 60, fan: Fan | None = None, spectral: bool = False) -> ThermalResult:
+    """Explicit integration with 1-minute substeps (stable: skin time constant is ~20 min).
+
+    ``spectral=True`` splits the skin's infrared exchange at the 8-13 um window
+    (see radiative.net_heat_out_spectral). It changes nothing for a gray coating.
+    """
     n = len(weather.Ta)
     dt = 3600.0 / substeps
     eps_sky = sky_emissivity(weather.dew_c, weather.cloud)
@@ -98,10 +103,18 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
     Ts = Tb = weather.Ta[0]
     out_s, out_b, out_fan = np.empty(n), np.empty(n), np.zeros(n)
     a, e, F = coating.alpha_solar, coating.eps_ir, enc.sky_view
+    if spectral:
+        e_in, e_out = coating.eps_bands
+        s_in, s_out = sky_band_emissivities(eps_sky, weather.Ta)
+        fa = window_fraction(weather.Ta)
+        ir_in = (e_in * (F * s_in + 1 - F) * fa + e_out * (F * s_out + 1 - F) * (1 - fa)) * SIGMA * weather.Ta**4
     running = False
     for i in range(n):
         Ta, G, es, hi, q = weather.Ta[i], weather.ghi[i], eps_sky[i], h[i], q_gen_w[i]
-        incoming = a * enc.sun_factor * G + e * (F * es + (1 - F)) * SIGMA * Ta**4
+        if spectral:
+            incoming = a * enc.sun_factor * G + ir_in[i]
+        else:
+            incoming = a * enc.sun_factor * G + e * (F * es + (1 - F)) * SIGMA * Ta**4
         on_steps = 0
         for _ in range(substeps):
             if fan is not None:
@@ -111,7 +124,12 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
                 on_steps += running
             q_int = enc.ua_internal * (Tb - Ts)
             q_fan = fan.ua * (Tb - Ta) if running else 0.0
-            dTs = (enc.area * (incoming - e * SIGMA * Ts**4 - hi * (Ts - Ta)) + q_int) / enc.skin_heat_capacity
+            if spectral:
+                fw = window_fraction_fast(Ts)
+                emit = SIGMA * Ts**4 * (e_in * fw + e_out * (1 - fw))
+            else:
+                emit = e * SIGMA * Ts**4
+            dTs = (enc.area * (incoming - emit - hi * (Ts - Ta)) + q_int) / enc.skin_heat_capacity
             dTb = (q - q_int - q_fan) / enc.battery_heat_capacity
             Ts += dTs * dt
             Tb += dTb * dt
