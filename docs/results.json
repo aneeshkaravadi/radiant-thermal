@@ -232,6 +232,64 @@
       11.0
     ]
   },
+  "assumption_sensitivity": {
+    "white_minus_dark_usd_base": 40.1,
+    "sun_factor": {
+      "base": 0.55,
+      "low": [
+        0.4,
+        24.2
+      ],
+      "high": [
+        0.7,
+        58.2
+      ]
+    },
+    "ua_internal": {
+      "base": 12.0,
+      "low": [
+        8.0,
+        54.4
+      ],
+      "high": [
+        20.0,
+        25.6
+      ]
+    },
+    "battery_heat_capacity": {
+      "base": 200000.0,
+      "low": [
+        100000.0,
+        45.3
+      ],
+      "high": [
+        400000.0,
+        29.5
+      ]
+    },
+    "sky_view": {
+      "base": 0.75,
+      "low": [
+        0.5,
+        42.7
+      ],
+      "high": [
+        1.0,
+        37.5
+      ]
+    },
+    "area": {
+      "base": 3.0,
+      "low": [
+        2.0,
+        43.2
+      ],
+      "high": [
+        4.0,
+        38.5
+      ]
+    }
+  },
   "laminate_map_note": "black contour = no change vs plain white paint; laminate emissivity 0.93",
   "radiator_m2_per_kW_at_300K": {
     "LEO, sun-shaded, Earth view 0.3": {

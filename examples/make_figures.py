@@ -1,6 +1,7 @@
 """Regenerate every figure and number in the README.   python examples/make_figures.py"""
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -209,6 +210,43 @@ for c in (rad.WHITE_PAINT, rad.DARK_PAINT):
 ax.set_title(f"Each tenth of absorptance costs \\${per_tenth[0]:.0f}/yr near white and \\${per_tenth[-1]:.0f}/yr near black",
              fontsize=10)  # \\$ so matplotlib doesn't read a pair of dollar signs as math
 save(fig, "absorptance_value.png")
+
+# ------------------------------------------------------------------ 2e. how much the answer leans on my enclosure assumptions
+def white_advantage(e):
+    revenue = {}
+    for c in (rad.DARK_PAINT, rad.WHITE_PAINT):
+        th = enc.simulate(c, w, q, e)
+        d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
+        revenue[c.name] = d2.revenue_usd
+    return revenue[rad.WHITE_PAINT.name] - revenue[rad.DARK_PAINT.name]
+
+
+base_enc = enc.Enclosure()
+ranges = {"sun_factor": (0.4, 0.7, "share of the skin facing the sun"), "ua_internal": (8.0, 20.0, "cells-to-skin conductance (W/K)"),
+          "battery_heat_capacity": (1.0e5, 4.0e5, "battery heat capacity (J/K)"), "sky_view": (0.5, 1.0, "view of the sky"),
+          "area": (2.0, 4.0, "skin area (m^2)")}
+base_adv = results["coatings"][rad.WHITE_PAINT.name]["revenue_usd"] - results["coatings"][rad.DARK_PAINT.name]["revenue_usd"]
+results["assumption_sensitivity"] = {"white_minus_dark_usd_base": round(base_adv, 1)}
+for field, (lo, hi, _) in ranges.items():
+    results["assumption_sensitivity"][field] = {
+        "base": getattr(base_enc, field),
+        "low": [lo, round(white_advantage(dataclasses.replace(base_enc, **{field: lo})), 1)],
+        "high": [hi, round(white_advantage(dataclasses.replace(base_enc, **{field: hi})), 1)]}
+order = sorted(ranges, key=lambda f: abs(results["assumption_sensitivity"][f]["high"][1] - results["assumption_sensitivity"][f]["low"][1]))
+fig, ax = plt.subplots(figsize=(7.5, 3.6))
+for k, field in enumerate(order):
+    r = results["assumption_sensitivity"][field]
+    lo_v, hi_v = r["low"][1], r["high"][1]
+    ax.barh(k, hi_v - base_adv, left=base_adv, color="C1", height=0.5)
+    ax.barh(k, lo_v - base_adv, left=base_adv, color="C0", height=0.5)
+    ax.text(min(lo_v, hi_v) - 1, k, f"{r['low'][0]:g}" if lo_v < hi_v else f"{r['high'][0]:g}", ha="right", va="center", fontsize=8)
+    ax.text(max(lo_v, hi_v) + 1, k, f"{r['high'][0]:g}" if lo_v < hi_v else f"{r['low'][0]:g}", ha="left", va="center", fontsize=8)
+ax.axvline(base_adv, color="k", lw=1)
+ax.set_yticks(range(len(order)), [f"{ranges[f][2]} (base {getattr(base_enc, f):g})" for f in order], fontsize=8)
+ax.set_xlabel("white paint's advantage over dark gray, 2025 (\\$ per battery)")
+ax.set_xlim(0, None)
+ax.set_title("Varying my enclosure assumptions one at a time:\nwhite paint's advantage changes size, never sign", fontsize=10)
+save(fig, "assumption_sensitivity.png")
 
 # ------------------------------------------------------------------ 3. film design map
 A_vals = np.linspace(0.0, 0.40, 9)
