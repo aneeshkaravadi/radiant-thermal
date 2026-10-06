@@ -105,6 +105,18 @@ with $S = 1361$ W/m², Earth IR $q_{IR} \approx 237$ W/m², albedo $a \approx 0.
 
 **Black paint.** In the hot case its absorbed sunlight exceeds its emission at 300 K, so no area is large enough. That is why radiators use low-α, high-ε surfaces.
 
+**Through an orbit (`radiator.orbit_transient`).** A circular orbit at radius $r = R_E + h$ takes $T = 2\pi\sqrt{r^3/\mu}$, which is 92.4 min at 400 km. With the sun at angle $\beta$ to the orbit plane, the spacecraft is in Earth's cylindrical shadow while $\cos\theta < -\sqrt{1 - (R_E/r)^2}/\cos\beta$, so the eclipse fraction is
+
+$$f = \frac{1}{\pi}\arccos\frac{\sqrt{h^2 + 2R_E h}}{r\cos\beta}$$
+
+or zero once that argument passes 1. At 400 km and $\beta = 0$ that's 39%, 36 minutes. A panel with heat capacity $c$ per m² then follows
+
+$$c\,\dot T = q_\text{int} + q_\text{abs}(t) - \varepsilon\sigma T^4$$
+
+with $q_\text{abs}$ switching between the sunlit value and Earth's infrared alone, stepped with RK4.
+
+**Checks:** the eclipse fraction against counting the points of a tilted orbit that fall inside the shadow cylinder, to $10^{-4}$. With no input and no load, the transient against the closed-form radiative cooldown $T = (T_0^{-3} + 3\varepsilon\sigma t/c)^{-1/3}$, to $10^{-9}$. Energy in over an orbit against energy radiated, once the orbits repeat, within 0.2% (`tests/test_models.py`).
+
 ## Limitations
 
 - Two infrared bands, not a full spectrum. Taking the sky as black outside the 8–13 µm window ignores the partly clear 16–25 µm region in dry air, so it slightly understates the benefit of emitting there.

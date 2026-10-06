@@ -71,6 +71,10 @@ A spacecraft radiator is the same energy balance with no atmosphere and no air, 
 
 <img src="docs/figures/radiator_area.png" width="85%">
 
+A radiator sized for the hot, sunlit case also has to live through eclipse. At 400 km an orbit takes 92 minutes, and 36 of them are in Earth's shadow, where nothing comes in but Earth's infrared. I followed an optical-solar-reflector radiator sized to reject 1 kW at 300 K in the hot case (4.1 m²) through a few orbits, with the electronics still putting their 1 kW into it in the shadow. It swings 14 K per orbit as a light panel (2 kJ/m²K of heat capacity) and 4 K with ten times that. The shadow geometry and the cooling are both checked against closed forms.
+
+<img src="docs/figures/radiator_orbit.png" width="80%">
+
 ## Mistakes and fixes
 
 - I first pulled the weather in local time while the ERCOT prices came timezone-aware, and around daylight saving those two don't line up hour for hour. Everything is in UTC now, and a test checks the two files match row for row.

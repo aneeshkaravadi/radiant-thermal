@@ -270,5 +270,28 @@ def area_or_note(v):
 results["radiator_m2_per_kW_at_300K"] = {env.name: {c.name: area_or_note(float(radiator.area_per_kw(c, env, 300.0)))
                                                      for c in space_coats} for env in (radiator.LEO_SHADED, radiator.LEO_HOT)}
 
+# ------------------------------------------------------------------ 6. the same radiator through an orbit
+area = float(radiator.area_per_kw(radiator.OSR, radiator.LEO_HOT, 300.0))  # m^2 to reject 1 kW at 300 K, sunlit hot case
+q_int = 1000.0 / area
+fig, ax = plt.subplots(figsize=(8, 3.8))
+results["radiator_orbit"] = {"area_m2_per_kW": round(area, 2), "period_min": round(radiator.orbit_period(400e3) / 60, 1),
+                             "eclipse_min": round(radiator.eclipse_fraction(400e3) * radiator.orbit_period(400e3) / 60, 1),
+                             "swing_K": {}}
+for cap, col in ((2000.0, "C3"), (5000.0, "C1"), (20000.0, "C0")):
+    t, T, sun = radiator.orbit_transient(radiator.OSR, radiator.LEO_HOT, cap, q_int, orbits=6)
+    last = t >= t[-1] - 3 * radiator.orbit_period(400e3)
+    ax.plot((t[last] - t[last][0]) / 60, T[last] - 273.15, color=col, label=f"{cap / 1000:g} kJ/m^2K")
+    one = t >= t[-1] - radiator.orbit_period(400e3)
+    results["radiator_orbit"]["swing_K"][f"{cap / 1000:g}_kJ_m2K"] = [round(float(T[one].min()), 1), round(float(T[one].max()), 1)]
+period_min, f_ecl = radiator.orbit_period(400e3) / 60, radiator.eclipse_fraction(400e3)
+for k in range(3):  # the eclipse is the last part of each orbit
+    ax.axvspan((k + 1 - f_ecl) * period_min, (k + 1) * period_min, color="k", alpha=0.08)
+ax.set_xlabel("time (min), three orbits at 400 km (gray: eclipse)")
+ax.set_ylabel("radiator temperature (C)")
+ax.set_title(f"Optical solar reflector radiator sized to reject 1 kW at 300 K in the hot case ({area:.1f} m^2):\n"
+             "how far it cools in Earth's shadow depends on its heat capacity", fontsize=9)
+ax.legend(fontsize=8, title="heat capacity per m^2", title_fontsize=8)
+save(fig, "radiator_orbit.png")
+
 (ROOT / "docs" / "results.json").write_text(json.dumps(results, indent=2))
 print(json.dumps(results, indent=2))

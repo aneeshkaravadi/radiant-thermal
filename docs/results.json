@@ -244,5 +244,24 @@
       "white thermal-control paint": 5.3,
       "black paint": "cannot reject heat"
     }
+  },
+  "radiator_orbit": {
+    "area_m2_per_kW": 4.06,
+    "period_min": 92.4,
+    "eclipse_min": 36.0,
+    "swing_K": {
+      "2_kJ_m2K": [
+        286.1,
+        300.0
+      ],
+      "5_kJ_m2K": [
+        288.0,
+        299.5
+      ],
+      "20_kJ_m2K": [
+        292.6,
+        296.7
+      ]
+    }
   }
 }

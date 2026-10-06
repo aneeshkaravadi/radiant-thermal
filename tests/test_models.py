@@ -183,3 +183,37 @@ def test_radiator_closed_form():
     assert A == pytest.approx(1000.0 / (0.9 * rad.SIGMA * 300.0**4))
     T_eq = radiator.equilibrium_temperature(c, radiator.Environment("sun normal", 1.0, 0.0))
     assert T_eq == pytest.approx((0.2 * 1361 / (0.9 * rad.SIGMA)) ** 0.25)
+
+
+
+# ---------------------------------------------------------------- radiator through an orbit
+
+def test_eclipse_fraction_matches_a_numerical_shadow_check():
+    """Walk around the orbit and count the points inside Earth's cylindrical shadow (sun along +x)."""
+    for alt, beta in ((400e3, 0.0), (400e3, 50.0), (1000e3, 20.0)):
+        r = radiator.R_EARTH + alt
+        th = np.linspace(0, 2 * np.pi, 200001)[:-1]
+        b = np.radians(beta)
+        # orbit plane tilted by beta out of the sun direction
+        x, y, z = r * np.cos(th) * np.cos(b), r * np.sin(th), r * np.cos(th) * np.sin(b)
+        shadow = (x < 0) & (np.hypot(y, z) < radiator.R_EARTH)
+        assert radiator.eclipse_fraction(alt, beta) == pytest.approx(shadow.mean(), abs=1e-4)
+    assert radiator.eclipse_fraction(400e3, 75.0) == 0.0  # past the critical beta the orbit never enters shadow
+
+
+def test_radiator_cools_down_like_the_closed_form_in_the_dark():
+    """No load and nothing coming in: c dT/dt = -eps sigma T^4 gives T = (T0^-3 + 3 eps sigma t / c)^(-1/3)."""
+    dark = radiator.Environment("nothing", 0.0, 0.0)
+    c = rad.Coating("panel", 0.1, 0.8)
+    t, T, _ = radiator.orbit_transient(c, dark, 5000.0, 0.0, orbits=1, T0=300.0)
+    exact = (300.0**-3 + 3 * 0.8 * rad.SIGMA * t / 5000.0) ** (-1 / 3)
+    assert T == pytest.approx(exact, rel=1e-9)
+
+
+def test_radiator_balances_energy_over_an_orbit():
+    """Once the orbits repeat, what comes in over one orbit equals what is radiated."""
+    c, env, cap, q = radiator.OSR, radiator.LEO_HOT, 3000.0, 150.0
+    t, T, sun = radiator.orbit_transient(c, env, cap, q, orbits=8)
+    last = t >= t[-1] - radiator.orbit_period(400e3)
+    q_in = np.where(sun, radiator.absorbed_flux(c, env), env.earth_view * c.eps_ir * radiator.EARTH_IR) + q
+    assert np.mean(q_in[last]) == pytest.approx(np.mean(c.eps_ir * rad.SIGMA * T[last] ** 4), rel=2e-3)

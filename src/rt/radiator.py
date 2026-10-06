@@ -55,3 +55,66 @@ def equilibrium_temperature(c: Coating, env: Environment, q_internal_w_m2: float
 OSR = Coating("optical solar reflector", 0.08, 0.80, "representative BOL")
 WHITE_SPACE_PAINT = Coating("white thermal-control paint", 0.20, 0.90, "representative BOL")
 BLACK_PAINT = Coating("black paint", 0.95, 0.88, "representative")
+
+
+# ---------------------------------------------------------------- through an orbit, in and out of eclipse
+#
+# A radiator sized for the hot, sunlit case has nothing coming in but Earth's
+# infrared once the spacecraft passes into Earth's shadow, so it cools. How
+# far depends on its heat capacity per square meter and how long the eclipse is.
+
+MU_EARTH = 3.986004418e14  # m^3/s^2
+R_EARTH = 6.371e6  # m
+
+
+def orbit_period(altitude_m: float) -> float:
+    """Circular orbit period (s), Kepler's third law."""
+    return float(2 * np.pi * np.sqrt((R_EARTH + altitude_m) ** 3 / MU_EARTH))
+
+
+def eclipse_fraction(altitude_m: float, beta_deg: float = 0.0) -> float:
+    """Share of a circular orbit spent in Earth's (cylindrical) shadow.
+
+    beta is the angle between the orbit plane and the sun direction. The orbit is in
+    shadow for  cos(theta) < -sqrt(1 - (R/r)^2) / cos(beta),  which gives
+    f = acos(sqrt(h^2 + 2 R h) / (r cos beta)) / pi, and no eclipse at all past the beta
+    where that argument reaches 1.
+    """
+    r = R_EARTH + altitude_m
+    arg = np.sqrt(altitude_m**2 + 2 * R_EARTH * altitude_m) / (r * np.cos(np.radians(beta_deg)))
+    return float(np.arccos(arg) / np.pi) if arg < 1 else 0.0
+
+
+def orbit_transient(c: Coating, sunlit_env: Environment, areal_heat_capacity: float, q_internal_w_m2: float,
+                    altitude_m: float = 400e3, beta_deg: float = 0.0, orbits: int = 6, steps_per_orbit: int = 4000,
+                    T0: float | None = None):
+    """Temperature of a radiator panel (per square meter) over several orbits.
+
+    In sunlight it absorbs ``absorbed_flux(c, sunlit_env)``; in eclipse only Earth's infrared,
+    F_earth eps q_IR. The panel is one thermal mass, c dT/dt = q_int + q_abs - eps sigma T^4,
+    stepped with RK4, starting at the sunlit equilibrium unless T0 is given.
+    Returns time (s), temperature (K) and a sunlit flag for each step.
+    """
+    period = orbit_period(altitude_m)
+    f_ecl = eclipse_fraction(altitude_m, beta_deg)
+    dt = period / steps_per_orbit
+    q_sun = absorbed_flux(c, sunlit_env) + q_internal_w_m2
+    q_dark = sunlit_env.earth_view * c.eps_ir * EARTH_IR + q_internal_w_m2
+    n = orbits * steps_per_orbit
+    t = np.arange(n + 1) * dt
+    phase = (t % period) / period
+    sunlit = phase < 1 - f_ecl  # the eclipse is the last part of each orbit
+    T = np.empty(n + 1)
+    T[0] = equilibrium_temperature(c, sunlit_env, q_internal_w_m2) if T0 is None else T0
+
+    def rate(temp, q_in):
+        return (q_in - c.eps_ir * SIGMA * temp**4) / areal_heat_capacity
+
+    for i in range(n):
+        q = q_sun if sunlit[i] else q_dark
+        k1 = rate(T[i], q)
+        k2 = rate(T[i] + 0.5 * dt * k1, q)
+        k3 = rate(T[i] + 0.5 * dt * k2, q)
+        k4 = rate(T[i] + dt * k3, q)
+        T[i + 1] = T[i] + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+    return t, T, sunlit
