@@ -8,19 +8,46 @@
         "summer_mean_batt_C": 42.33,
         "hours_derated": 1195,
         "aging_rate_vs_25C": 2.288,
-        "revenue_usd": 263.5
+        "revenue_usd": 263.5,
+        "with_fan": {
+          "summer_mean_batt_C": 34.75,
+          "hours_derated": 2,
+          "aging_rate_vs_25C": 1.545,
+          "revenue_usd": 319.3,
+          "fan_hours": 2863,
+          "fan_kwh": 85.9,
+          "fan_cost_usd": 3.4
+        }
       },
       "white paint": {
         "summer_mean_batt_C": 40.68,
         "hours_derated": 339,
         "aging_rate_vs_25C": 2.009,
-        "revenue_usd": 303.6
+        "revenue_usd": 303.6,
+        "with_fan": {
+          "summer_mean_batt_C": 33.98,
+          "hours_derated": 0,
+          "aging_rate_vs_25C": 1.463,
+          "revenue_usd": 319.3,
+          "fan_hours": 2162,
+          "fan_kwh": 64.8,
+          "fan_cost_usd": 2.64
+        }
       },
       "ideal radiative cooler": {
         "summer_mean_batt_C": 39.74,
         "hours_derated": 208,
         "aging_rate_vs_25C": 1.883,
-        "revenue_usd": 312.1
+        "revenue_usd": 312.1,
+        "with_fan": {
+          "summer_mean_batt_C": 33.4,
+          "hours_derated": 0,
+          "aging_rate_vs_25C": 1.414,
+          "revenue_usd": 319.3,
+          "fan_hours": 1734,
+          "fan_kwh": 52.0,
+          "fan_cost_usd": 2.09
+        }
       }
     }
   },
@@ -33,19 +60,46 @@
         "summer_mean_batt_C": 42.51,
         "hours_derated": 1308,
         "aging_rate_vs_25C": 2.473,
-        "revenue_usd": 241.8
+        "revenue_usd": 241.8,
+        "with_fan": {
+          "summer_mean_batt_C": 34.23,
+          "hours_derated": 2,
+          "aging_rate_vs_25C": 1.6,
+          "revenue_usd": 290.4,
+          "fan_hours": 3153,
+          "fan_kwh": 94.6,
+          "fan_cost_usd": 3.92
+        }
       },
       "white paint": {
         "summer_mean_batt_C": 41.09,
         "hours_derated": 399,
         "aging_rate_vs_25C": 2.191,
-        "revenue_usd": 277.5
+        "revenue_usd": 277.5,
+        "with_fan": {
+          "summer_mean_batt_C": 33.46,
+          "hours_derated": 0,
+          "aging_rate_vs_25C": 1.526,
+          "revenue_usd": 290.4,
+          "fan_hours": 2457,
+          "fan_kwh": 73.7,
+          "fan_cost_usd": 3.1
+        }
       },
       "ideal radiative cooler": {
         "summer_mean_batt_C": 40.1,
         "hours_derated": 259,
         "aging_rate_vs_25C": 2.055,
-        "revenue_usd": 284.2
+        "revenue_usd": 284.2,
+        "with_fan": {
+          "summer_mean_batt_C": 33.0,
+          "hours_derated": 0,
+          "aging_rate_vs_25C": 1.483,
+          "revenue_usd": 290.4,
+          "fan_hours": 1959,
+          "fan_kwh": 58.8,
+          "fan_cost_usd": 2.45
+        }
       }
     }
   }
