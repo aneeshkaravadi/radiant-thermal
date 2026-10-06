@@ -25,6 +25,10 @@ Each day a small linear program decides when to charge and discharge to make the
 
 If the battery never had to derate it would make $319, so the dark box loses about $56 of that and the white box about $16. White paint is worth roughly $40 per battery per year here, plus 12% slower calendar aging, which isn't nothing across a fleet.
 
+Sweeping the absorptance at the same emissivity shows the cost isn't linear. Each tenth of solar absorptance costs about $3 a year near white and $11 near black, because a darker box spends more of its hot hours derated. So dirt that takes a white box from 0.25 to 0.35 gives back about $6 of its advantage and adds about 100 derated hours.
+
+<img src="docs/figures/absorptance_value.png" width="60%">
+
 The reason is easiest to see in one week of August: the cells are hottest right when prices peak, which is exactly when you most want the battery at full power.
 
 ![ERCOT week](docs/figures/ercot_week.png)

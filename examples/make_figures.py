@@ -182,6 +182,34 @@ fig.suptitle("Selective emitters (0.95 inside 8-13 um, 0.05-0.10 outside): colde
 save(fig, "selective_emitters.png")
 results["spectral"]["hottest_day_surface_minus_air_K"] = {k: [round(v, 1) for v in dT] for k, dT in surf.items()}
 
+# ------------------------------------------------------------------ 2d. what a tenth of solar absorptance is worth
+alphas = np.round(np.arange(0.05, 0.96, 0.10), 2)
+sweep = []
+for a in alphas:
+    c = rad.Coating(f"alpha {a:.2f}", float(a), 0.90)
+    th = enc.simulate(c, w, q)
+    d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
+    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way))
+    sweep.append((d2.revenue_usd, int((enc.derate_fraction(th2.T_batt) < 1).sum())))
+lost = results["dispatch_unconstrained_usd"] - np.array([s_[0] for s_ in sweep])
+hours = np.array([s_[1] for s_ in sweep])
+per_tenth = np.diff(lost)  # alphas are 0.1 apart
+results["absorptance_value"] = {"emissivity": 0.90, "alpha": alphas.tolist(), "revenue_lost_usd": np.round(lost, 1).tolist(),
+                                "hours_derated": hours.tolist(), "usd_per_tenth": np.round(per_tenth, 1).tolist()}
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(alphas, lost, "o-", color="C3", label="revenue lost to derating")
+ax.set_xlabel("skin solar absorptance (infrared emissivity 0.90)")
+ax.set_ylabel("\\$ lost in 2025", color="C3")
+ax2 = ax.twinx()
+ax2.plot(alphas, hours, "s--", color="C0", label="hours derated")
+ax2.set_ylabel("hours derated in 2025", color="C0")
+for c in (rad.WHITE_PAINT, rad.DARK_PAINT):
+    ax.axvline(c.alpha_solar, color="k", ls=":", lw=1)
+    ax.text(c.alpha_solar + 0.01, lost.max() * 0.95, c.name, fontsize=8)
+ax.set_title(f"Each tenth of absorptance costs \\${per_tenth[0]:.0f}/yr near white and \\${per_tenth[-1]:.0f}/yr near black",
+             fontsize=10)  # \\$ so matplotlib doesn't read a pair of dollar signs as math
+save(fig, "absorptance_value.png")
+
 # ------------------------------------------------------------------ 3. film design map
 A_vals = np.linspace(0.0, 0.40, 9)
 R_vals = np.linspace(0.0, 0.40, 9)

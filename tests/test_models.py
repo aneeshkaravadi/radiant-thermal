@@ -135,6 +135,16 @@ def test_fan_does_not_blow_in_hotter_air():
     assert r.celsius().max() > enc.Fan().on_c and not r.fan_on.any()
 
 
+def test_skin_temperature_responds_to_absorptance_like_the_linearized_balance():
+    """With no heat from the battery, the steady skin warms by f G / (h + 4 eps sigma T^3) per unit of absorptance."""
+    w = constant_weather(72, 305.0, ghi=800.0)
+    e, a, da = enc.Enclosure(), 0.40, 0.01
+    T = [enc.simulate(rad.Coating("c", aa, 0.9), w, np.zeros(72), e).T_skin[-1] for aa in (a, a + da)]
+    h = rad.convection_coefficient(2.0)
+    expected = e.sun_factor * 800.0 / (h + 4 * 0.9 * rad.SIGMA * T[0] ** 3)
+    assert (T[1] - T[0]) / da == pytest.approx(expected, rel=0.02)
+
+
 def test_two_band_enclosure_matches_the_gray_one_for_a_gray_skin():
     w = constant_weather(48, 305.0, ghi=400.0, dew=18.0)
     q = np.full(48, 200.0)
