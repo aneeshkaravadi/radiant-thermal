@@ -98,6 +98,6 @@ def cooling_power_at_ambient(coating: Coating, Ta, G, eps_sky, F_sky=1.0) -> flo
 
 
 # Representative coatings for comparison. Replace with datasheet values for real designs.
-DARK_PAINT = Coating("dark grey paint", 0.75, 0.90, "representative")
+DARK_PAINT = Coating("dark gray paint", 0.75, 0.90, "representative")
 WHITE_PAINT = Coating("white paint", 0.25, 0.90, "representative")
 IDEAL_COOLER = Coating("ideal radiative cooler", 0.04, 0.95, "upper-bound reference")

@@ -4,7 +4,7 @@
     "summer_mean_air_C": 28.9,
     "summer_mean_dew_point_C": 20.99,
     "skins": {
-      "dark grey paint": {
+      "dark gray paint": {
         "summer_mean_batt_C": 42.33,
         "hours_derated": 1195,
         "aging_rate_vs_25C": 2.288,
@@ -29,7 +29,7 @@
     "summer_mean_air_C": 28.21,
     "summer_mean_dew_point_C": 23.56,
     "skins": {
-      "dark grey paint": {
+      "dark gray paint": {
         "summer_mean_batt_C": 42.51,
         "hours_derated": 1308,
         "aging_rate_vs_25C": 2.473,

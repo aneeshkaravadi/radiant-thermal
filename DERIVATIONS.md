@@ -2,7 +2,7 @@
 
 ## 1. Surface energy balance (`radiative.net_heat_out`)
 
-Per square metre of surface at temperature $T_s$, these are the energy flows:
+Per square meter of surface at temperature $T_s$, these are the energy flows:
 
 | term | expression |
 |---|---|
@@ -26,7 +26,7 @@ The atmosphere is mostly transparent between 8 and 13 µm (the "window"), so the
 
 $$\varepsilon_\text{clear} = 0.711 + 0.56\left(\frac{T_{dp}}{100}\right) + 0.73\left(\frac{T_{dp}}{100}\right)^2 \qquad (T_{dp}\text{ in } ^\circ\text{C})$$
 
-Humid air closes the window (more water vapour emission), so the formula rises with dew point. Clouds are treated as near-black emitters at air temperature covering a fraction $c$ of the sky: $\varepsilon_\text{sky} = c + (1-c)\,\varepsilon_\text{clear}$.
+Humid air closes the window (more water vapor emission), so the formula rises with dew point. Clouds are treated as near-black emitters at air temperature covering a fraction $c$ of the sky: $\varepsilon_\text{sky} = c + (1-c)\,\varepsilon_\text{clear}$.
 
 ## 3. A laminate or wrap over a substrate (`Film.on`)
 

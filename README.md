@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/aneeshkaravadi/radiant-thermal/actions/workflows/ci.yml/badge.svg)](https://github.com/aneeshkaravadi/radiant-thermal/actions/workflows/ci.yml)
 
-Does the paint colour of an outdoor home battery matter, in dollars? I live in North Texas, where batteries sit outside in summer sun and the grid's prices spike on the hottest afternoons, so I wanted to see whether those two things interact. They do.
+Does the paint color of an outdoor home battery matter, in dollars? I live in North Texas, where batteries sit outside in summer sun and the grid's prices spike on the hottest afternoons, so I wanted to see whether those two things interact. They do.
 
 ![Battery temperature over the summer](docs/figures/battery_summer_hist.png)
 
@@ -19,7 +19,7 @@ Each day a small linear program decides when to charge and discharge to make the
 
 | Skin | Summer avg cell temp | Hours derated | Aging rate vs 25 °C | 2025 revenue |
 |---|---|---|---|---|
-| dark grey paint | 42.3 °C | 1,195 | 2.29× | $264 |
+| dark gray paint | 42.3 °C | 1,195 | 2.29× | $264 |
 | white paint | 40.7 °C | 339 | 2.01× | $304 |
 | ideal radiative cooler | 39.7 °C | 208 | 1.88× | $312 |
 
@@ -31,7 +31,7 @@ The reason is easiest to see in one week of August: the cells are hottest right 
 
 ## Dallas vs Houston
 
-I reran everything for Houston with its own 2025 weather and its own ERCOT load-zone prices (`examples/compare_cities.py`). I expected Houston to be easier on the batteries, since its summer air was actually 0.7 °C cooler than Dallas's. It wasn't: the dark box derated for 1,308 hours against 1,195 in Dallas, and aged faster too. The difference is humidity. Houston's summer dew point averages 23.6 °C against 21.0 °C in Dallas, and water vapour closes the sky's infrared window, so the enclosure can't radiate heat away as well at night or during the day. Air temperature alone would have told the wrong story.
+I reran everything for Houston with its own 2025 weather and its own ERCOT load-zone prices (`examples/compare_cities.py`). I expected Houston to be easier on the batteries, since its summer air was actually 0.7 °C cooler than Dallas's. It wasn't: the dark box derated for 1,308 hours against 1,195 in Dallas, and aged faster too. The difference is humidity. Houston's summer dew point averages 23.6 °C against 21.0 °C in Dallas, and water vapor closes the sky's infrared window, so the enclosure can't radiate heat away as well at night or during the day. Air temperature alone would have told the wrong story.
 
 <img src="docs/figures/city_comparison.png" width="80%">
 
@@ -65,4 +65,4 @@ The enclosure numbers describe a generic passive unit, not anyone's product. Rea
 
 ---
 
-Aneesh Karavadi, engineering at UNT (TAMS). Separately from this repo, I'm an undergraduate researcher at UNT, testing transparent UV/IR-blocking radiative-cooling films. A window solar-heat-gain model would be a natural place to apply that kind of film here someday. I used Claude Code to write a lot of the implementation, but the questions and conclusions are mine.
+Aneesh Karavadi, dual-enrolled engineering student at UNT through TAMS. Separately from this repo, I'm an undergraduate researcher at UNT, testing transparent UV/IR-blocking radiative-cooling films. A window solar-heat-gain model would be a natural place to apply that kind of film here someday. I used Claude Code to write a lot of the implementation, but the questions and conclusions are mine.

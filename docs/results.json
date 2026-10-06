@@ -1,7 +1,7 @@
 {
   "dispatch_unconstrained_usd": 319.3,
   "coatings": {
-    "dark grey paint": {
+    "dark gray paint": {
       "alpha": 0.75,
       "eps": 0.9,
       "summer_mean_batt_C": 42.33,
