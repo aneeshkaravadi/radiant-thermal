@@ -37,6 +37,43 @@
       339
     ]
   },
+  "fan": {
+    "flow_m3_s": 0.05,
+    "power_w": 30.0,
+    "on_off_C": [
+      35.0,
+      32.0
+    ],
+    "skins": {
+      "dark gray paint": {
+        "summer_mean_batt_C": 34.75,
+        "hours_derated": 2,
+        "aging_rate_vs_25C": 1.545,
+        "revenue_usd": 319.3,
+        "fan_hours": 2863,
+        "fan_kwh": 85.9,
+        "fan_cost_usd_at_dam": 3.4
+      },
+      "white paint": {
+        "summer_mean_batt_C": 33.98,
+        "hours_derated": 0,
+        "aging_rate_vs_25C": 1.463,
+        "revenue_usd": 319.3,
+        "fan_hours": 2162,
+        "fan_kwh": 64.8,
+        "fan_cost_usd_at_dam": 2.64
+      },
+      "ideal radiative cooler": {
+        "summer_mean_batt_C": 33.4,
+        "hours_derated": 0,
+        "aging_rate_vs_25C": 1.414,
+        "revenue_usd": 319.3,
+        "fan_hours": 1734,
+        "fan_kwh": 52.0,
+        "fan_cost_usd_at_dam": 2.09
+      }
+    }
+  },
   "laminate_map_note": "black contour = no change vs plain white paint; laminate emissivity 0.93",
   "radiator_m2_per_kW_at_300K": {
     "LEO, sun-shaded, Earth view 0.3": {

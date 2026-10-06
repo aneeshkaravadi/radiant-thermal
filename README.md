@@ -35,6 +35,16 @@ I reran everything for Houston with its own 2025 weather and its own ERCOT load-
 
 <img src="docs/figures/city_comparison.png" width="80%">
 
+## Once there's a fan
+
+Real units usually have fans, so I added one: about 100 cfm and 30 W. It switches on when the cells pass 35 °C and off below 32 °C, and only while the outside air is cooler than the cells, since blowing hotter air in would heat them up. That changes the answer. Every skin earns the full $319, because the cells almost never reach 45 °C anymore (2 hours for the dark box instead of 1,195). The paint now shows up mostly as fan time. The dark box ran its fan 2,863 hours (86 kWh, $3.40 at the same day-ahead prices), and the white box 2,162 hours (65 kWh, $2.64). White still ages a little slower, at 1.46 times the 25 °C rate against 1.55.
+
+I expected the fan to do most of its work at night, cooling the cells down while the air is cool, but it doesn't. The cells stay warmer than the air around the clock, so the dark box's fan runs most of the afternoon and evening, and only a third of its summer running is between 9 pm and 9 am.
+
+So the paint matters a lot for a passive box and much less once there's a fan. For a fan-cooled unit, a white skin mostly buys a quarter less fan running.
+
+<img src="docs/figures/fan_cooling.png" width="95%">
+
 ## Wraps and laminates
 
 I also expected that laminating a film or wrap over a white enclosure could help, and mostly it can't. Sunlight that passes through the film bounces between it and the paint, so I summed those bounces as a geometric series. The result is that on an opaque box, only a film that absorbs almost no sunlight beats plain white paint, and anything that absorbs UV or near-infrared makes it worse.
@@ -61,7 +71,7 @@ pytest -q
 python examples/make_figures.py
 ```
 
-The enclosure numbers describe a generic passive unit, not anyone's product. Real units with fans or active cooling run cooler, so the differences between skins are the result, not the absolute temperatures. Assumptions and derivations are in [DERIVATIONS.md](DERIVATIONS.md), and data sources are in [data/README.md](data/README.md).
+The enclosure numbers describe a generic unit, not anyone's product, so the differences between skins are the result, not the absolute temperatures. Assumptions and derivations are in [DERIVATIONS.md](DERIVATIONS.md), and data sources are in [data/README.md](data/README.md).
 
 ---
 

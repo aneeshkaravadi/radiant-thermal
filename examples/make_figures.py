@@ -92,6 +92,48 @@ results["white_vs_dark"] = {
     "derated_hours": [dark["hours_derated"], white["hours_derated"]],
 }
 
+# ------------------------------------------------------------------ 2b. the same skins with a ventilation fan
+fan = enc.Fan()
+results["fan"] = {"flow_m3_s": fan.flow_m3_s, "power_w": fan.power_w, "on_off_C": [fan.on_c, fan.off_c], "skins": {}}
+for c in coatings:
+    th = enc.simulate(c, w, q, fan=fan)
+    d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
+    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way), fan=fan)
+    fan_kwh = th2.fan_energy_kwh(fan)
+    results["fan"]["skins"][c.name] = {
+        "summer_mean_batt_C": round(float(th2.celsius()[summer].mean()), 2),
+        "hours_derated": int((enc.derate_fraction(th2.T_batt) < 1).sum()),
+        "aging_rate_vs_25C": round(float(enc.arrhenius_factor(th2.T_batt).mean()), 3),
+        "revenue_usd": round(d2.revenue_usd, 1),
+        "fan_hours": round(float(th2.fan_on.sum())),
+        "fan_kwh": round(float(fan_kwh.sum()), 1),
+        "fan_cost_usd_at_dam": round(float(np.sum(prices.to_numpy() * fan_kwh) / 1000.0), 2),
+    }
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.6))
+x = np.arange(len(coatings))
+names = [c.name for c in coatings]
+passive = [results["coatings"][n] for n in names]
+fanned = [results["fan"]["skins"][n] for n in names]
+upper = results["dispatch_unconstrained_usd"]
+axes[0].bar(x - 0.2, [upper - r["revenue_usd"] for r in passive], 0.4, label="passive")
+axes[0].bar(x + 0.2, [upper - f["revenue_usd"] + f["fan_cost_usd_at_dam"] for f in fanned], 0.4,
+            label="with fan (lost revenue + fan electricity)")
+axes[0].set_ylabel("$ lost in 2025")
+axes[1].bar(x - 0.2, [r["aging_rate_vs_25C"] for r in passive], 0.4, label="passive")
+axes[1].bar(x + 0.2, [f["aging_rate_vs_25C"] for f in fanned], 0.4, label="with fan")
+axes[1].set_ylabel("calendar aging rate vs 25 C")
+axes[2].bar(x, [f["fan_hours"] for f in fanned], 0.5, color="C1")
+for k, f in enumerate(fanned):
+    axes[2].text(k, f["fan_hours"] + 40, f"{f['fan_kwh']:.0f} kWh", ha="center", fontsize=8)
+axes[2].set_ylabel("hours the fan ran in 2025")
+for ax in axes:
+    ax.set_xticks(x, [n.replace(" radiative", "\nradiative") for n in names], fontsize=8)
+axes[0].legend(fontsize=7)
+axes[1].legend(fontsize=7)
+fig.suptitle(f"A {fan.power_w:.0f} W, {fan.flow_m3_s * 2119:.0f} cfm fan (on at {fan.on_c:.0f} C, off at {fan.off_c:.0f} C): "
+             "the paint matters much less once it's running", fontsize=10)
+save(fig, "fan_cooling.png")
+
 # ------------------------------------------------------------------ 3. film design map
 A_vals = np.linspace(0.0, 0.40, 9)
 R_vals = np.linspace(0.0, 0.40, 9)

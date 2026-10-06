@@ -56,6 +56,14 @@ $$C_s\dot T_s = A\,[\text{surface balance}] + UA\,(T_b - T_s), \qquad C_b \dot T
 
 **Check:** with constant inputs, the steady state must satisfy $UA(T_b - T_s) = Q_\text{gen}$ (`test_enclosure_settles_to_steady_state`).
 
+**Fan.** A ventilation fan moving $\dot V$ of outside air past the cells removes
+
+$$Q_\text{fan} = \epsilon\,\rho c_p \dot V\,(T_b - T_a)$$
+
+from the battery node. Here $\epsilon$ is how close the exhaust air gets to the cell temperature (0.5), and $\rho c_p \approx 1168$ J/m³K for air near 30 °C. At 0.05 m³/s that's 29 W/K, against 12 W/K through the skin. A thermostat on the cells switches it on above 35 °C and off below 32 °C. The gap between them keeps it from switching every substep. It also only runs while $T_a < T_b$, because otherwise ventilation would heat the cells. It draws 30 W while running, priced at the hour's day-ahead price.
+
+**Checks:** a fan that never starts leaves every temperature identical. An always-on fan settles where $UA(T_b - T_s) + Q_\text{fan} = Q_\text{gen}$. With cool air and a load that would take a passive box to about 45 °C, the cells cycle inside the 32–35 °C band. With the air hotter than the cells, the fan stays off even above its set point (`tests/test_models.py`).
+
 ## 5. Aging and derating
 
 **Arrhenius aging.** Calendar aging accelerates with temperature: $k(T)/k(25^\circ\text{C}) = \exp\!\left[\frac{E_a}{R}\left(\frac{1}{298.15} - \frac{1}{T}\right)\right]$. I use $E_a = 50$ kJ/mol; the literature for Li-ion calendar fade spans about 30–60 kJ/mol. I report the time-averaged *relative* rate, not absolute capacity fade, because that needs cell-specific data.
@@ -88,6 +96,6 @@ with $S = 1361$ W/m², Earth IR $q_{IR} \approx 237$ W/m², albedo $a \approx 0.
 ## Limitations
 
 - Band-averaged (gray) optics, not spectral. A spectral model would resolve the 8–13 µm window explicitly.
-- The enclosure is two lumped nodes: no internal gradients, no fans or HVAC.
+- The enclosure is two lumped nodes with no internal gradients. The fan is a simple on/off ventilation fan, and there's no air conditioning or liquid cooling.
 - No soiling or UV degradation of coatings. Organic films degrade under space UV and atomic oxygen, so the radiator section uses standard spacecraft coatings.
 - One weather location, one year.
