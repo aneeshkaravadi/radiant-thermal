@@ -1,0 +1,447 @@
+{
+  "cloud_effect_low_mid_high": [
+    0.8,
+    0.57,
+    0.29
+  ],
+  "refit_on_january": [
+    0.803,
+    0.572,
+    0.29
+  ],
+  "refit_on_all_hours": [
+    0.785,
+    0.526,
+    0.264
+  ],
+  "hours": {
+    "dra_01": 736,
+    "dra_07": 743,
+    "gwn_01": 743,
+    "gwn_07": 736
+  },
+  "station_inputs": {
+    "clear sky only": {
+      "dra_01": {
+        "all": {
+          "n": 736,
+          "bias": -20.7,
+          "rms": 26.7
+        },
+        "clear": {
+          "n": 499,
+          "bias": -14.2,
+          "rms": 17.1
+        },
+        "overcast": {
+          "n": 109,
+          "bias": -42.1,
+          "rms": 45.9
+        }
+      },
+      "dra_07": {
+        "all": {
+          "n": 743,
+          "bias": -9.6,
+          "rms": 16.7
+        },
+        "clear": {
+          "n": 640,
+          "bias": -6.7,
+          "rms": 11.8
+        },
+        "overcast": {
+          "n": 21,
+          "bias": -42.7,
+          "rms": 45.5
+        }
+      },
+      "gwn_01": {
+        "all": {
+          "n": 743,
+          "bias": -41.3,
+          "rms": 53.2
+        },
+        "clear": {
+          "n": 277,
+          "bias": -14.5,
+          "rms": 18.4
+        },
+        "overcast": {
+          "n": 315,
+          "bias": -70.6,
+          "rms": 75.2
+        }
+      },
+      "gwn_07": {
+        "all": {
+          "n": 736,
+          "bias": -6.9,
+          "rms": 12.5
+        },
+        "clear": {
+          "n": 253,
+          "bias": -4.3,
+          "rms": 9.4
+        },
+        "overcast": {
+          "n": 143,
+          "bias": -12.2,
+          "rms": 17.4
+        }
+      }
+    },
+    "first model: total cloud, black": {
+      "dra_01": {
+        "all": {
+          "n": 736,
+          "bias": 7.2,
+          "rms": 37.9
+        },
+        "clear": {
+          "n": 499,
+          "bias": -13.7,
+          "rms": 16.5
+        },
+        "overcast": {
+          "n": 109,
+          "bias": 76.5,
+          "rms": 78.3
+        }
+      },
+      "dra_07": {
+        "all": {
+          "n": 743,
+          "bias": -0.0,
+          "rms": 22.1
+        },
+        "clear": {
+          "n": 640,
+          "bias": -6.2,
+          "rms": 11.4
+        },
+        "overcast": {
+          "n": 21,
+          "bias": 74.7,
+          "rms": 80.5
+        }
+      },
+      "gwn_01": {
+        "all": {
+          "n": 743,
+          "bias": 9.3,
+          "rms": 30.8
+        },
+        "clear": {
+          "n": 277,
+          "bias": -13.9,
+          "rms": 17.9
+        },
+        "overcast": {
+          "n": 315,
+          "bias": 24.2,
+          "rms": 35.9
+        }
+      },
+      "gwn_07": {
+        "all": {
+          "n": 736,
+          "bias": 14.0,
+          "rms": 25.1
+        },
+        "clear": {
+          "n": 253,
+          "bias": -2.7,
+          "rms": 9.0
+        },
+        "overcast": {
+          "n": 143,
+          "bias": 42.6,
+          "rms": 44.9
+        }
+      }
+    },
+    "cloud layers (fit on January)": {
+      "dra_01": {
+        "all": {
+          "n": 736,
+          "bias": -9.4,
+          "rms": 17.1
+        },
+        "clear": {
+          "n": 499,
+          "bias": -14.0,
+          "rms": 16.8
+        },
+        "overcast": {
+          "n": 109,
+          "bias": 5.1,
+          "rms": 16.7
+        }
+      },
+      "dra_07": {
+        "all": {
+          "n": 743,
+          "bias": -5.1,
+          "rms": 13.3
+        },
+        "clear": {
+          "n": 640,
+          "bias": -6.5,
+          "rms": 11.6
+        },
+        "overcast": {
+          "n": 21,
+          "bias": 22.6,
+          "rms": 29.3
+        }
+      },
+      "gwn_01": {
+        "all": {
+          "n": 743,
+          "bias": -7.3,
+          "rms": 18.9
+        },
+        "clear": {
+          "n": 277,
+          "bias": -14.2,
+          "rms": 18.1
+        },
+        "overcast": {
+          "n": 315,
+          "bias": -2.1,
+          "rms": 17.8
+        }
+      },
+      "gwn_07": {
+        "all": {
+          "n": 736,
+          "bias": 2.2,
+          "rms": 11.9
+        },
+        "clear": {
+          "n": 253,
+          "bias": -3.4,
+          "rms": 9.1
+        },
+        "overcast": {
+          "n": 143,
+          "bias": 9.9,
+          "rms": 16.9
+        }
+      }
+    }
+  },
+  "open_meteo_inputs": {
+    "clear sky only": {
+      "dra_01": {
+        "all": {
+          "n": 736,
+          "bias": -21.7,
+          "rms": 28.1
+        },
+        "clear": {
+          "n": 499,
+          "bias": -15.1,
+          "rms": 17.7
+        },
+        "overcast": {
+          "n": 109,
+          "bias": -42.0,
+          "rms": 46.4
+        }
+      },
+      "dra_07": {
+        "all": {
+          "n": 743,
+          "bias": -7.2,
+          "rms": 15.7
+        },
+        "clear": {
+          "n": 640,
+          "bias": -4.6,
+          "rms": 11.0
+        },
+        "overcast": {
+          "n": 21,
+          "bias": -38.9,
+          "rms": 42.1
+        }
+      },
+      "gwn_01": {
+        "all": {
+          "n": 743,
+          "bias": -39.3,
+          "rms": 51.8
+        },
+        "clear": {
+          "n": 277,
+          "bias": -12.2,
+          "rms": 16.1
+        },
+        "overcast": {
+          "n": 315,
+          "bias": -69.1,
+          "rms": 73.9
+        }
+      },
+      "gwn_07": {
+        "all": {
+          "n": 736,
+          "bias": -2.7,
+          "rms": 11.7
+        },
+        "clear": {
+          "n": 253,
+          "bias": 1.2,
+          "rms": 9.2
+        },
+        "overcast": {
+          "n": 143,
+          "bias": -8.5,
+          "rms": 16.5
+        }
+      }
+    },
+    "first model: total cloud, black": {
+      "dra_01": {
+        "all": {
+          "n": 736,
+          "bias": 5.8,
+          "rms": 37.7
+        },
+        "clear": {
+          "n": 499,
+          "bias": -14.6,
+          "rms": 17.1
+        },
+        "overcast": {
+          "n": 109,
+          "bias": 75.1,
+          "rms": 77.2
+        }
+      },
+      "dra_07": {
+        "all": {
+          "n": 743,
+          "bias": 2.0,
+          "rms": 22.1
+        },
+        "clear": {
+          "n": 640,
+          "bias": -4.1,
+          "rms": 10.8
+        },
+        "overcast": {
+          "n": 21,
+          "bias": 71.8,
+          "rms": 78.4
+        }
+      },
+      "gwn_01": {
+        "all": {
+          "n": 743,
+          "bias": 11.3,
+          "rms": 31.1
+        },
+        "clear": {
+          "n": 277,
+          "bias": -11.6,
+          "rms": 15.6
+        },
+        "overcast": {
+          "n": 315,
+          "bias": 25.6,
+          "rms": 37.1
+        }
+      },
+      "gwn_07": {
+        "all": {
+          "n": 736,
+          "bias": 16.9,
+          "rms": 25.9
+        },
+        "clear": {
+          "n": 253,
+          "bias": 2.6,
+          "rms": 9.4
+        },
+        "overcast": {
+          "n": 143,
+          "bias": 43.4,
+          "rms": 46.2
+        }
+      }
+    },
+    "cloud layers (fit on January)": {
+      "dra_01": {
+        "all": {
+          "n": 736,
+          "bias": -10.6,
+          "rms": 18.3
+        },
+        "clear": {
+          "n": 499,
+          "bias": -14.9,
+          "rms": 17.4
+        },
+        "overcast": {
+          "n": 109,
+          "bias": 4.8,
+          "rms": 17.8
+        }
+      },
+      "dra_07": {
+        "all": {
+          "n": 743,
+          "bias": -2.8,
+          "rms": 13.7
+        },
+        "clear": {
+          "n": 640,
+          "bias": -4.4,
+          "rms": 10.8
+        },
+        "overcast": {
+          "n": 21,
+          "bias": 23.3,
+          "rms": 33.9
+        }
+      },
+      "gwn_01": {
+        "all": {
+          "n": 743,
+          "bias": -5.2,
+          "rms": 17.9
+        },
+        "clear": {
+          "n": 277,
+          "bias": -12.0,
+          "rms": 15.8
+        },
+        "overcast": {
+          "n": 315,
+          "bias": -0.7,
+          "rms": 18.1
+        }
+      },
+      "gwn_07": {
+        "all": {
+          "n": 736,
+          "bias": 5.8,
+          "rms": 12.6
+        },
+        "clear": {
+          "n": 253,
+          "bias": 2.0,
+          "rms": 9.2
+        },
+        "overcast": {
+          "n": 143,
+          "bias": 12.3,
+          "rms": 18.1
+        }
+      }
+    }
+  }
+}

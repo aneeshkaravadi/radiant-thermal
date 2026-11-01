@@ -28,17 +28,33 @@ from scipy.optimize import brentq
 SIGMA = 5.670374419e-8  # W/m^2/K^4
 
 
-def sky_emissivity(dew_point_c, cloud_fraction=0.0):
-    """Clear-sky emissivity from dew point (Berdahl & Martin 1984), with a cloud correction.
+# How much of the gap between the clear sky and a black sky at air temperature each layer of cloud
+# closes per unit of cover: (low, mid, high). Fitted to measured downwelling infrared at NOAA SURFRAD
+# Goodwin Creek MS and Desert Rock NV in January 2025 (rt.surfrad.fit_cloud_effects) and checked
+# against July 2025, which the fit never saw (tests/test_models.py).
+CLOUD_EFFECT = (0.80, 0.57, 0.29)
 
-    Clear sky:  eps = 0.711 + 0.56 (Tdp/100) + 0.73 (Tdp/100)^2,  Tdp in C.
-    Clouds are treated as near-black emitters at air temperature covering a
-    fraction c of the sky: eps = c + (1 - c) eps_clear (Crawford & Duchon 1999 form).
-    """
+
+def clear_sky_emissivity(dew_point_c):
+    """Berdahl & Martin (1984): eps = 0.711 + 0.56 (Tdp/100) + 0.73 (Tdp/100)^2, Tdp in C."""
     t = np.asarray(dew_point_c, float) / 100.0
-    clear = 0.711 + 0.56 * t + 0.73 * t**2
-    c = np.clip(np.asarray(cloud_fraction, float), 0.0, 1.0)
-    return c + (1.0 - c) * clear
+    return 0.711 + 0.56 * t + 0.73 * t**2
+
+
+def sky_emissivity(dew_point_c, low=0.0, mid=0.0, high=0.0, effect=CLOUD_EFFECT):
+    """Sky emissivity at air temperature, from the dew point and the cover of low, mid and high cloud.
+
+    eps = eps_clear + (1 - eps_clear) C, where C = 1 - prod_j (1 - k_j c_j) treats the layers as
+    randomly overlapping, each closing a share k_j of the gap to a black sky. Low water clouds are
+    nearly black and warm; thin, cold high cloud adds much less. With every k_j = 1 and all the
+    cloud in one layer this is the black-cloud form eps = c + (1 - c) eps_clear.
+    """
+    clear = clear_sky_emissivity(dew_point_c)
+    covers = [np.clip(np.asarray(c, float), 0.0, 1.0) for c in (low, mid, high)]
+    gap_open = 1.0
+    for k, c in zip(effect, covers):
+        gap_open = gap_open * (1.0 - k * c)
+    return clear + (1.0 - clear) * (1.0 - gap_open)
 
 
 def convection_coefficient(wind_speed):

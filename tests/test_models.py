@@ -10,15 +10,23 @@ from rt import dispatch as dp
 from rt import enclosure as enc
 from rt import radiative as rad
 from rt import radiator
+from rt import surfrad
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_berdahl_martin_values():
-    # Tdp = 0 C -> 0.711 ; Tdp = 20 C -> 0.711 + 0.112 + 0.0292
-    assert rad.sky_emissivity(0.0) == pytest.approx(0.711)
-    assert rad.sky_emissivity(20.0) == pytest.approx(0.711 + 0.56 * 0.2 + 0.73 * 0.04)
-    assert rad.sky_emissivity(10.0, cloud_fraction=1.0) == pytest.approx(1.0)
+def test_cloud_layers_limits():
+    """No cloud gives the clear sky; layers that close the whole gap give a black sky; one black layer
+    of cover c gives the black-cloud form c + (1 - c) eps_clear; more cloud never lowers the sky."""
+    clear = rad.clear_sky_emissivity(15.0)
+    assert rad.sky_emissivity(15.0) == pytest.approx(clear)
+    assert rad.sky_emissivity(15.0, 1.0, 1.0, 1.0, effect=(1.0, 1.0, 1.0)) == pytest.approx(1.0)
+    assert rad.sky_emissivity(15.0, 0.4, effect=(1.0, 0.0, 0.0)) == pytest.approx(0.4 + 0.6 * clear)
+    c = np.linspace(0, 1, 6)
+    for layer in range(3):
+        cover = [np.zeros(6)] * 3
+        cover[layer] = c
+        assert np.all(np.diff(rad.sky_emissivity(15.0, *cover)) > 0)
 
 
 def test_blackbody_surface_in_dark_overcast_sits_at_air_temperature():
@@ -86,7 +94,7 @@ def test_enclosure_settles_to_steady_state():
     n = 48
     t = pd.date_range("2025-07-01", periods=n, freq="h", tz="UTC")
     w = enc.Weather(t, np.full(n, 305.0), np.full(n, 15.0), np.full(n, 400.0),
-                    np.full(n, 2.0), np.zeros(n))
+                    np.full(n, 2.0), np.zeros((n, 3)))
     q = np.full(n, 200.0)
     e = enc.Enclosure()
     r = enc.simulate(rad.WHITE_PAINT, w, q, e)
@@ -109,7 +117,7 @@ def test_heat_into_the_skin_acts_like_extra_absorbed_sunlight():
 
 def constant_weather(n, Ta, ghi=0.0, dew=15.0):
     t = pd.date_range("2025-07-01", periods=n, freq="h", tz="UTC")
-    return enc.Weather(t, np.full(n, Ta), np.full(n, dew), np.full(n, ghi), np.full(n, 2.0), np.zeros(n))
+    return enc.Weather(t, np.full(n, Ta), np.full(n, dew), np.full(n, ghi), np.full(n, 2.0), np.zeros((n, 3)))
 
 
 def test_fan_that_never_starts_changes_nothing():
@@ -345,3 +353,40 @@ def test_reusing_unchanged_days_gives_the_same_dispatch():
     fresh = dp.dispatch(p, b, power_cap_kw=cap)
     reused = dp.dispatch(p, b, power_cap_kw=cap, reuse=(None, free))
     assert reused.revenue_usd == pytest.approx(fresh.revenue_usd, abs=1e-9)
+
+
+# ---------------------------------------------------------------- the sky against measured infrared (NOAA SURFRAD)
+
+@pytest.fixture(scope="module")
+def surfrad_hours():
+    return surfrad.load()
+
+
+def test_clear_sky_emissivity_matches_measured_longwave(surfrad_hours):
+    """Berdahl & Martin with each station's own temperature and humidity, on hours Open-Meteo calls clear.
+    Measured: biases of -4 to -15 W/m^2 (the fit reads a little low, most in winter), RMS 9 to 18."""
+    d = surfrad_hours
+    stats = surfrad.error_stats(d, surfrad.modeled_longwave(d, clouds="none"))
+    for key, row in stats.items():
+        assert row["clear"]["n"] > 200, key
+        assert -16.0 < row["clear"]["bias"] < 5.0, key
+        assert row["clear"]["rms"] < 20.0, key
+
+
+def test_cloud_layers_fitted_in_january_hold_up_in_july(surfrad_hours):
+    """Driven by Open-Meteo inputs the way the enclosure is, July (never used in the fit) comes out within
+    8 W/m^2 of the pyrgeometers on average at both sites, with an RMS under 15 W/m^2 and well below what my
+    first model (total cloud as black cloud at air temperature) gave."""
+    d = surfrad_hours
+    new = surfrad.error_stats(d, surfrad.modeled_longwave(d, inputs="open-meteo"))
+    old = surfrad.error_stats(d, surfrad.modeled_longwave(d, inputs="open-meteo", clouds="black_total"))
+    for key in ("gwn_07", "dra_07"):
+        assert abs(new[key]["all"]["bias"]) < 8.0, key
+        assert new[key]["all"]["rms"] < 15.0, key
+        assert new[key]["all"]["rms"] < 0.7 * old[key]["all"]["rms"], key
+
+
+def test_cloud_constants_are_the_january_fit(surfrad_hours):
+    d = surfrad_hours
+    k = surfrad.fit_cloud_effects(d[d["month"] == 1].reset_index(drop=True))
+    assert k == pytest.approx(rad.CLOUD_EFFECT, abs=0.01)

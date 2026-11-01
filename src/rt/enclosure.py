@@ -91,7 +91,11 @@ class Weather:
     dew_c: np.ndarray
     ghi: np.ndarray  # W/m^2
     wind: np.ndarray  # m/s at 10 m
-    cloud: np.ndarray  # 0..1
+    cloud: np.ndarray  # (n, 3): low, mid and high cloud cover, 0..1
+
+    @property
+    def eps_sky(self) -> np.ndarray:
+        return sky_emissivity(self.dew_c, *np.asarray(self.cloud, float).T)
 
     @classmethod
     def from_csv(cls, path) -> Weather:
@@ -110,8 +114,9 @@ class Weather:
             return np.r_[0.5 * (x[:-1] + x[1:]), x[-1]]
 
         ghi = np.r_[d["shortwave_radiation"].to_numpy(float)[1:], 0.0]
+        cloud = np.column_stack([midpoint(d[f"cloud_cover_{k}"]) / 100.0 for k in ("low", "mid", "high")])
         return cls(pd.DatetimeIndex(d["time"]), midpoint(d["temperature_2m"]) + 273.15, midpoint(d["dew_point_2m"]),
-                   ghi, midpoint(d["wind_speed_10m"]), midpoint(d["cloud_cover"]) / 100.0)
+                   ghi, midpoint(d["wind_speed_10m"]), cloud)
 
 
 @dataclass
@@ -146,7 +151,7 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
     enc = Enclosure() if enc is None else enc
     n = len(weather.Ta)
     dt = 3600.0 / substeps
-    eps_sky = sky_emissivity(weather.dew_c, weather.cloud)
+    eps_sky = weather.eps_sky
     h = enc.h(weather.wind)
     Ts = Tb = weather.Ta[0]
     out_s, out_b, out_fan = np.empty(n), np.empty(n), np.zeros(n)

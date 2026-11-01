@@ -26,7 +26,21 @@ The atmosphere is mostly transparent between 8 and 13 µm (the "window"), so the
 
 $$\varepsilon_\text{clear} = 0.711 + 0.56\left(\frac{T_{dp}}{100}\right) + 0.73\left(\frac{T_{dp}}{100}\right)^2 \qquad (T_{dp}\text{ in } ^\circ\text{C})$$
 
-Humid air closes the window (more water vapor emission), so the formula rises with dew point. Clouds are treated as near-black emitters at air temperature covering a fraction $c$ of the sky: $\varepsilon_\text{sky} = c + (1-c)\,\varepsilon_\text{clear}$.
+Humid air closes the window (more water vapor emission), so the formula rises with dew point.
+
+**Clouds.** A cloud fills part of the gap between the clear sky and a black sky at air temperature. Low water clouds are warm and nearly black, while thin, cold high cloud adds much less, so I treat Open-Meteo's low, mid and high cloud cover ($c_l, c_m, c_h$) as randomly overlapping layers that each close a share $k$ of the gap:
+
+$$\varepsilon_\text{sky} = \varepsilon_\text{clear} + (1 - \varepsilon_\text{clear})\left[1 - (1 - k_l c_l)(1 - k_m c_m)(1 - k_h c_h)\right]$$
+
+My first version used the total cloud cover as black cloud, $\varepsilon_\text{sky} = c + (1-c)\,\varepsilon_\text{clear}$, and never checked it against a measurement. So I did: NOAA's SURFRAD network measures downwelling infrared with pyrgeometers, and I took hourly means for January and July 2025 at Goodwin Creek, Mississippi (humid) and Desert Rock, Nevada (dry), next to Open-Meteo's weather for the same hours (`data/surfrad/`). Fitting the three $k$ to January only gives $(k_l, k_m, k_h) = (0.80, 0.57, 0.29)$. July, which the fit never saw, then checks it (`examples/validate_sky.py`, `docs/sky_validation.json`):
+
+| driven by Open-Meteo inputs, modeled minus measured (W/m²) | Goodwin Creek, July | Desert Rock, July |
+|---|---|---|
+| clear sky only | bias −2.7, RMS 11.7 | bias −7.2, RMS 15.7 |
+| my first model (total cloud, black) | bias +16.9, RMS 25.9 | bias +2.0, RMS 22.1 |
+| cloud layers | bias +5.8, RMS 12.6 | bias −2.8, RMS 13.7 |
+
+Under overcast skies the first model read 43 W/m² high at Goodwin Creek in July and 72 W/m² high at Desert Rock, so it understated how well the box could cool to the sky. The layered model still reads 12 and 23 W/m² high there (only 21 overcast hours at Desert Rock). On clear hours, Berdahl–Martin with each station's own temperature and humidity reads 4 to 15 W/m² low, most in winter. These are two sites and two months, so the error bars are indicative, not a full validation. The tests bound the July error and check that refitting January reproduces the constants.
 
 **Splitting out the window (`radiative.net_heat_out_spectral`).** The share of a blackbody's emission at temperature $T$ that falls between 8 and 13 µm is $f_w(T) = F(13T) - F(8T)$, where $F(\lambda T)$ is the exact series
 
