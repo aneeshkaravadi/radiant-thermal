@@ -66,18 +66,37 @@ class Fan:
 
 @dataclass
 class Weather:
-    time: pd.DatetimeIndex
+    """Weather for each simulated hour. Row i holds the conditions over [time[i], time[i] + 1 h).
+
+    ``ghi`` is the mean sunlight over that hour and the other fields are hour averages too.
+    """
+
+    time: pd.DatetimeIndex  # hour starts
     Ta: np.ndarray  # K
     dew_c: np.ndarray
     ghi: np.ndarray  # W/m^2
-    wind: np.ndarray  # m/s
+    wind: np.ndarray  # m/s at 10 m
     cloud: np.ndarray  # 0..1
 
     @classmethod
     def from_csv(cls, path) -> Weather:
+        """Read an Open-Meteo hourly file and put every variable on the model's hour-start convention.
+
+        Open-Meteo reports shortwave_radiation at time t as the mean over the hour before t, and
+        temperature, dew point, wind and cloud cover as instantaneous values at t. The model steps
+        the hour starting at t_i, so it needs the sunlight stamped t_(i+1) and the midpoint of the
+        instantaneous values at t_i and t_(i+1). The files end at local midnight, so the last hour
+        gets no sunlight and keeps its last instantaneous values.
+        """
         d = pd.read_csv(path, parse_dates=["time"])
-        return cls(pd.DatetimeIndex(d["time"]), d["temperature_2m"].to_numpy() + 273.15, d["dew_point_2m"].to_numpy(),
-                   d["shortwave_radiation"].to_numpy(), d["wind_speed_10m"].to_numpy(), d["cloud_cover"].to_numpy() / 100.0)
+
+        def midpoint(x):
+            x = np.asarray(x, float)
+            return np.r_[0.5 * (x[:-1] + x[1:]), x[-1]]
+
+        ghi = np.r_[d["shortwave_radiation"].to_numpy(float)[1:], 0.0]
+        return cls(pd.DatetimeIndex(d["time"]), midpoint(d["temperature_2m"]) + 273.15, midpoint(d["dew_point_2m"]),
+                   ghi, midpoint(d["wind_speed_10m"]), midpoint(d["cloud_cover"]) / 100.0)
 
 
 @dataclass

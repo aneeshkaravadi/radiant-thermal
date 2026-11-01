@@ -177,6 +177,42 @@ def test_real_data_files_align(city, zone):
     assert len(w.Ta) == len(p) == 8760 and (w.time == p.index).all()
 
 
+def cos_zenith(times: pd.DatetimeIndex, lat: float, lon: float) -> np.ndarray:
+    """Cosine of the solar zenith angle (0 below the horizon), from NOAA's General Solar Position Calculations."""
+    doy = times.dayofyear.to_numpy()
+    hr = times.hour.to_numpy() + times.minute.to_numpy() / 60 + times.second.to_numpy() / 3600
+    g = 2 * np.pi / 365 * (doy - 1 + (hr - 12) / 24)
+    eqtime = 229.18 * (0.000075 + 0.001868 * np.cos(g) - 0.032077 * np.sin(g) - 0.014615 * np.cos(2 * g)
+                       - 0.040849 * np.sin(2 * g))
+    decl = (0.006918 - 0.399912 * np.cos(g) + 0.070257 * np.sin(g) - 0.006758 * np.cos(2 * g)
+            + 0.000907 * np.sin(2 * g) - 0.002697 * np.cos(3 * g) + 0.00148 * np.sin(3 * g))
+    ha = np.radians((hr * 60 + eqtime + 4 * lon) / 4 - 180)  # times are UTC, so no timezone offset
+    la = np.radians(lat)
+    return np.clip(np.sin(la) * np.sin(decl) + np.cos(la) * np.cos(decl) * np.cos(ha), 0.0, None)
+
+
+@pytest.mark.parametrize("city, lat, lon", [("dallas", 32.78, -96.80), ("houston", 29.76, -95.37)])
+def test_sunlight_lands_in_the_hour_it_belongs_to(city, lat, lon):
+    """On cloudless days, the sunlight the model applies to the hour starting at t should follow the sun's
+    height averaged over [t, t + 1 h), not over the hour before or the instant t."""
+    path = ROOT / f"data/weather/{city}_2025_hourly.csv"
+    w = enc.Weather.from_csv(path)
+    raw = pd.read_csv(path)
+    local_day = pd.Series(w.time.tz_convert("America/Chicago").date)
+    clear = raw["cloud_cover"].groupby(local_day).transform("max").to_numpy() < 10
+    clear &= np.r_[clear[1:], False]  # the sunlight for hour i comes from row i + 1, so both must be clear
+    minutes = [pd.Timedelta(m + 0.5, unit="min") for m in range(60)]
+    same_hour = np.mean([cos_zenith(w.time + m, lat, lon) for m in minutes], axis=0)
+    hour_before = np.mean([cos_zenith(w.time - m, lat, lon) for m in minutes], axis=0)
+    instant = cos_zenith(w.time, lat, lon)
+    sel = clear & ((w.ghi > 0) | (same_hour > 0))
+    r = {name: np.corrcoef(w.ghi[sel], geo[sel])[0, 1]
+         for name, geo in (("same", same_hour), ("before", hour_before), ("instant", instant))}
+    assert sel.sum() > 250
+    assert r["same"] > 0.99
+    assert r["same"] > r["instant"] + 0.02 and r["same"] > r["before"] + 0.05
+
+
 def test_radiator_closed_form():
     c = rad.Coating("c", 0.2, 0.9)
     A = radiator.area_per_kw(c, radiator.DEEP_SPACE, 300.0)
