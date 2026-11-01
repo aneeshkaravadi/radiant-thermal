@@ -104,8 +104,8 @@ class Weather:
 @dataclass
 class ThermalResult:
     time: pd.DatetimeIndex
-    T_skin: np.ndarray  # K, hourly
-    T_batt: np.ndarray  # K, hourly
+    T_skin: np.ndarray  # K, mean over each hour
+    T_batt: np.ndarray  # K, mean over each hour
     T_air: np.ndarray
     fan_on: np.ndarray | None = None  # fraction of each hour the fan ran
 
@@ -148,7 +148,7 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
             incoming = a * enc.sun_factor * G + ir_in[i]
         else:
             incoming = a * enc.sun_factor * G + e * (F * es + (1 - F)) * SIGMA * Ta**4
-        on_steps = 0
+        on_steps, sum_s, sum_b = 0, 0.0, 0.0
         for _ in range(substeps):
             if fan is not None:
                 Tc = Tb - 273.15
@@ -166,7 +166,9 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
             dTb = (q - q_int - q_fan) / enc.battery_heat_capacity
             Ts += dTs * dt
             Tb += dTb * dt
-        out_s[i], out_b[i], out_fan[i] = Ts, Tb, on_steps / substeps
+            sum_s += Ts
+            sum_b += Tb
+        out_s[i], out_b[i], out_fan[i] = sum_s / substeps, sum_b / substeps, on_steps / substeps
     return ThermalResult(weather.time, out_s, out_b, weather.Ta, None if fan is None else out_fan)
 
 

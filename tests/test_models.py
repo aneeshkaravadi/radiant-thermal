@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from rt import coupled
 from rt import dispatch as dp
 from rt import enclosure as enc
 from rt import radiative as rad
@@ -294,3 +295,42 @@ def test_radiator_balances_energy_over_an_orbit():
     last = t >= t[-1] - radiator.orbit_period(400e3)
     q_in = np.where(sun, radiator.absorbed_flux(c, env), env.earth_view * c.eps_ir * radiator.EARTH_IR) + q
     assert np.mean(q_in[last]) == pytest.approx(np.mean(c.eps_ir * rad.SIGMA * T[last] ** 4), rel=2e-3)
+
+
+# ---------------------------------------------------------------- dispatch and temperature together
+
+def august_slice(days=14):
+    w = enc.Weather.from_csv(ROOT / "data/weather/dallas_2025_hourly.csv")
+    p = dp.load_prices(ROOT / "data/ercot/dam_2025_lz_north.csv")
+    local = w.time.tz_convert("America/Chicago")
+    i0 = int(np.argmax(local >= pd.Timestamp("2025-08-01", tz="America/Chicago")))
+    sl = slice(i0, i0 + 24 * days)
+    ws = enc.Weather(w.time[sl], w.Ta[sl], w.dew_c[sl], w.ghi[sl], w.wind[sl], w.cloud[sl])
+    return ws, p.iloc[sl]
+
+
+def test_coupled_dispatch_never_asks_for_more_than_its_own_temperatures_allow():
+    """Two hot weeks with every watt of loss in the cells, so derating bites. The converged schedule must stay
+    under derate(T) * P in every hour, using the temperatures that schedule itself produces."""
+    w, p = august_slice()
+    b = dp.Battery()
+    r = coupled.run(rad.DARK_PAINT, w, p, b, inverter_heat="cells")
+    assert r.hours_derated > 20  # the case actually exercises the caps
+    allowed = enc.derate_fraction(r.thermal.T_batt) * b.power_kw
+    assert np.all(np.maximum(r.dispatch.charge_kw, r.dispatch.discharge_kw) <= allowed + 1e-3)
+    assert r.revenue_usd < r.uncapped.revenue_usd
+    # the temperatures reported are the ones this dispatch produces
+    q_cell, q_skin = coupled.heat_inputs(r.dispatch, b, "cells")
+    again = enc.simulate(rad.DARK_PAINT, w, q_cell, q_skin_w=q_skin)
+    assert again.T_batt == pytest.approx(r.thermal.T_batt, abs=1e-12)
+
+
+def test_reusing_unchanged_days_gives_the_same_dispatch():
+    w, p = august_slice(days=6)
+    b = dp.Battery()
+    free = dp.dispatch(p, b)
+    cap = np.full(len(p), b.power_kw)
+    cap[30:40] = 2.0  # only the second local day changes
+    fresh = dp.dispatch(p, b, power_cap_kw=cap)
+    reused = dp.dispatch(p, b, power_cap_kw=cap, reuse=(None, free))
+    assert reused.revenue_usd == pytest.approx(fresh.revenue_usd, abs=1e-9)

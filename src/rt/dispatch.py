@@ -91,18 +91,33 @@ def _solve_day(price: np.ndarray, b: Battery, power_cap: np.ndarray | None = Non
     return c, d, soc
 
 
-def dispatch(prices: pd.Series, b: Battery | None = None, power_cap_kw: np.ndarray | None = None) -> DispatchResult:
-    """``prices`` indexed by hour start (tz-aware), $/MWh. ``power_cap_kw`` optionally limits each hour."""
+def dispatch(prices: pd.Series, b: Battery | None = None, power_cap_kw: np.ndarray | None = None,
+             reuse: tuple[np.ndarray | None, DispatchResult] | None = None) -> DispatchResult:
+    """``prices`` indexed by hour start (tz-aware), $/MWh. ``power_cap_kw`` optionally limits each hour.
+
+    ``reuse=(previous_cap, previous_result)`` copies the previous solution for every day whose caps
+    haven't changed, since the LP for that day is then identical. ``previous_cap`` None means uncapped.
+    """
     b = Battery() if b is None else b
     t = pd.DatetimeIndex(prices.index)
     p = prices.to_numpy(float)
+    n = len(p)
     C, D, S = np.zeros_like(p), np.zeros_like(p), np.zeros_like(p)
+
+    def caps(c):
+        return np.full(n, b.power_kw) if c is None else np.minimum(b.power_kw, np.asarray(c, float))
+
+    cap = caps(power_cap_kw)
+    prev_cap = None if reuse is None else caps(reuse[0])
     local_day = t.tz_convert("America/Chicago").date if t.tz is not None else t.date
-    days = pd.Series(np.arange(len(p))).groupby(local_day)
+    days = pd.Series(np.arange(n)).groupby(local_day)
     for _, idx in days:
         i = idx.to_numpy()
-        cap = None if power_cap_kw is None else power_cap_kw[i]
-        C[i], D[i], S[i] = _solve_day(p[i], b, cap)
+        if reuse is not None and np.array_equal(cap[i], prev_cap[i]):
+            prev = reuse[1]
+            C[i], D[i], S[i] = prev.charge_kw[i], prev.discharge_kw[i], prev.soc_kwh[i]
+        else:
+            C[i], D[i], S[i] = _solve_day(p[i], b, cap[i])
     return DispatchResult(t, C, D, S, p)
 
 

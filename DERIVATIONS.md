@@ -95,12 +95,15 @@ For each Central-time day, with hourly prices $p_h$:
 
 $$\max \sum_h p_h (d_h - c_h) \quad \text{s.t.}\quad s_{k} = \tfrac{E}{2} + \sum_{j\le k}\left(\eta c_j - \tfrac{d_j}{\eta}\right) \in [0, E],\; s_{24} = \tfrac{E}{2},\; 0 \le c_h, d_h \le P_h$$
 
-It is linear, so the HiGHS solver returns the global optimum in milliseconds per day. Because the model has perfect foresight, this is an **upper bound** on energy-arbitrage revenue. The thermal coupling runs in three steps:
-1. dispatch unconstrained
-2. simulate temperature, then turn temperature into per-hour power caps
-3. re-dispatch and re-simulate
+It is linear, so the HiGHS solver returns the global optimum in milliseconds per day. Because the model has perfect foresight, this is an **upper bound** on energy-arbitrage revenue.
 
-One fixed-point pass is enough here because the caps change heat generation only a little.
+**Coupling to temperature (`coupled.run`).** The battery management system caps power at $P\,\text{derate}(T_b)$, and the power it allows changes how much heat the cells make. I want a schedule that never asks for more than the cap implied by its own temperatures:
+
+1. dispatch with no caps and simulate the enclosure
+2. tighten the caps, $\text{cap}_k = \min(\text{cap}_{k-1},\ P\,\text{derate}(T_k))$
+3. re-dispatch under $\text{cap}_k$ and re-simulate, and stop once every hour satisfies $\max(c_h, d_h) \le P\,\text{derate}(T_h)$ to within 1 W
+
+$T_h$ here is the cells' mean temperature over hour $h$. My first version did a single re-dispatch with caps from the uncapped schedule's temperatures and claimed that was enough. It wasn't: repeating it flips between two schedules, and the one I reported asked for more power than its own temperatures allowed in 182 hours. Because these caps only tighten, the loop can't oscillate, and it settles in 3 to 8 passes. The result is a feasible schedule rather than necessarily the best one, so its revenue is a lower bound on what a perfect-foresight battery could earn under derating, with the uncapped dispatch as the upper bound. `test_coupled_dispatch_never_asks_for_more_than_its_own_temperatures_allow` checks the stopping condition on two hot weeks.
 
 ## 7. Spacecraft radiator (`radiator.py`)
 

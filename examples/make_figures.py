@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from rt import coupled
 from rt import dispatch as dp
 from rt import enclosure as enc
 from rt import radiative as rad
@@ -58,25 +59,24 @@ save(fig, "hot_day_surface.png")
 # ------------------------------------------------------------------ 2. a year in a battery enclosure
 battery = dp.Battery()
 base_dispatch = dp.dispatch(prices, battery)
-q = base_dispatch.heat_w(battery.eta_one_way)
+q, q_skin = coupled.heat_inputs(base_dispatch, battery)  # the uncapped schedule's heat, for the film map and the August week
 results["dispatch_unconstrained_usd"] = round(base_dispatch.revenue_usd, 1)
+runs = {}
 results["coatings"] = {}
 fig, ax = plt.subplots(figsize=(7, 4))
 bins = np.arange(25, 62, 1.0)
 for c in coatings:
-    th = enc.simulate(c, w, q)
-    # Feed thermal derating back into dispatch once: power caps from the first thermal pass.
-    cap = enc.derate_fraction(th.T_batt) * battery.power_kw
-    d2 = dp.dispatch(prices, battery, power_cap_kw=cap)
-    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way))
+    r = runs[c.name] = coupled.run(c, w, prices, battery)
+    th2, d2 = r.thermal, r.dispatch
     Tb = th2.celsius()
     results["coatings"][c.name] = {
         "alpha": round(c.alpha_solar, 3), "eps": c.eps_ir,
         "summer_mean_batt_C": round(float(Tb[summer].mean()), 2),
         "max_batt_C": round(float(Tb.max()), 1),
         "aging_rate_vs_25C": round(float(enc.arrhenius_factor(th2.T_batt).mean()), 3),
-        "hours_derated": int((enc.derate_fraction(th2.T_batt) < 1).sum()),
+        "hours_derated": r.hours_derated,
         "revenue_usd": round(d2.revenue_usd, 1),
+        "coupling_passes": r.passes,
     }
     ax.hist(Tb[summer], bins=bins, histtype="step", lw=1.6, label=f"{c.name}: mean {Tb[summer].mean():.1f} C")
 ax.axvline(45, color="k", ls=":", lw=1)
@@ -98,9 +98,8 @@ results["white_vs_dark"] = {
 fan = enc.Fan()
 results["fan"] = {"flow_m3_s": fan.flow_m3_s, "power_w": fan.power_w, "on_off_C": [fan.on_c, fan.off_c], "skins": {}}
 for c in coatings:
-    th = enc.simulate(c, w, q, fan=fan)
-    d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
-    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way), fan=fan)
+    r = coupled.run(c, w, prices, battery, fan=fan)
+    th2, d2 = r.thermal, r.dispatch
     fan_kwh = th2.fan_energy_kwh(fan)
     results["fan"]["skins"][c.name] = {
         "summer_mean_batt_C": round(float(th2.celsius()[summer].mean()), 2),
@@ -142,11 +141,9 @@ sel_ideal = rad.selective_coating("selective ideal cooler", rad.IDEAL_COOLER.alp
 
 
 def run_box(c, spectral):
-    th = enc.simulate(c, w, q, spectral=spectral)
-    d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
-    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way), spectral=spectral)
-    return {"summer_mean_batt_C": round(float(th2.celsius()[summer].mean()), 2),
-            "hours_derated": int((enc.derate_fraction(th2.T_batt) < 1).sum()), "revenue_usd": round(d2.revenue_usd, 1)}
+    r = coupled.run(c, w, prices, battery, spectral=spectral)
+    return {"summer_mean_batt_C": round(float(r.thermal.celsius()[summer].mean()), 2),
+            "hours_derated": r.hours_derated, "revenue_usd": round(r.revenue_usd, 1)}
 
 
 results["spectral"] = {}
@@ -188,10 +185,8 @@ alphas = np.round(np.arange(0.05, 0.96, 0.10), 2)
 sweep = []
 for a in alphas:
     c = rad.Coating(f"alpha {a:.2f}", float(a), 0.90)
-    th = enc.simulate(c, w, q)
-    d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
-    th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way))
-    sweep.append((d2.revenue_usd, int((enc.derate_fraction(th2.T_batt) < 1).sum())))
+    r = coupled.run(c, w, prices, battery)
+    sweep.append((r.revenue_usd, r.hours_derated))
 lost = results["dispatch_unconstrained_usd"] - np.array([s_[0] for s_ in sweep])
 hours = np.array([s_[1] for s_ in sweep])
 per_tenth = np.diff(lost)  # alphas are 0.1 apart
@@ -215,9 +210,7 @@ save(fig, "absorptance_value.png")
 def white_advantage(e):
     revenue = {}
     for c in (rad.DARK_PAINT, rad.WHITE_PAINT):
-        th = enc.simulate(c, w, q, e)
-        d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
-        revenue[c.name] = d2.revenue_usd
+        revenue[c.name] = coupled.run(c, w, prices, battery, e).revenue_usd
     return revenue[rad.WHITE_PAINT.name] - revenue[rad.DARK_PAINT.name]
 
 
@@ -259,7 +252,7 @@ for i, Rf in enumerate(R_vals):
             grid[i, j] = np.nan
             continue
         c = rad.Film("f", Rf, 1 - Rf - Af, 0.93).on(rad.WHITE_PAINT)
-        grid[i, j] = enc.simulate(c, w, q, substeps=20).celsius()[summer].mean() - ref
+        grid[i, j] = enc.simulate(c, w, q, substeps=20, q_skin_w=q_skin).celsius()[summer].mean() - ref
 fig, ax = plt.subplots(figsize=(6.5, 4.8))
 cs = ax.contourf(A_vals, R_vals, grid, levels=np.arange(-3, 6.5, 0.5), cmap="RdBu_r")
 ax.contour(A_vals, R_vals, grid, levels=[0], colors="k", linewidths=1.5)
@@ -272,11 +265,12 @@ results["laminate_map_note"] = "black contour = no change vs plain white paint; 
 
 # ------------------------------------------------------------------ 4. ERCOT week with derating
 wk = slice(int(np.argmax(local >= pd.Timestamp("2025-08-04", tz="America/Chicago"))), int(np.argmax(local >= pd.Timestamp("2025-08-11", tz="America/Chicago"))))
-th_dark = enc.simulate(rad.DARK_PAINT, w, q)
+th_dark = runs[rad.DARK_PAINT.name].thermal
+d_dark = runs[rad.DARK_PAINT.name].dispatch
 fig, ax = plt.subplots(2, 1, figsize=(8, 5), sharex=True)
 ax[0].plot(local[wk], prices.to_numpy()[wk], color="C7")
 ax[0].set_ylabel("ERCOT North DAM ($/MWh)")
-ax[1].plot(local[wk], base_dispatch.discharge_kw[wk] - base_dispatch.charge_kw[wk], color="C0", label="dispatch (kW, + = export)")
+ax[1].plot(local[wk], d_dark.discharge_kw[wk] - d_dark.charge_kw[wk], color="C0", label="dispatch (kW, + = export)")
 ax2 = ax[1].twinx()
 ax2.plot(local[wk], th_dark.celsius()[wk], color="C3", label="cell temp, dark paint (C)")
 ax2.axhline(45, color="C3", ls=":", lw=1)

@@ -14,6 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from rt import coupled
 from rt import dispatch as dp
 from rt import enclosure as enc
 from rt import radiative as rad
@@ -34,27 +35,22 @@ def run_city(weather_csv, price_csv, battery=None):
     local = w.time.tz_convert("America/Chicago")
     summer = (local.month >= 6) & (local.month <= 8)
     base = dp.dispatch(prices, battery)
-    q = base.heat_w(battery.eta_one_way)
     out = {"upper_bound_usd": round(base.revenue_usd, 1), "summer_mean_air_C": round(float(w.Ta[summer].mean() - 273.15), 2),
            "summer_mean_dew_point_C": round(float(w.dew_c[summer].mean()), 2), "skins": {}}
     fan = enc.Fan()
     for c in SKINS:
-        th = enc.simulate(c, w, q)
-        d2 = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(th.T_batt) * battery.power_kw)
-        th2 = enc.simulate(c, w, d2.heat_w(battery.eta_one_way))
-        out["skins"][c.name] = {"summer_mean_batt_C": round(float(th2.celsius()[summer].mean()), 2),
-                                "hours_derated": int((enc.derate_fraction(th2.T_batt) < 1).sum()),
-                                "aging_rate_vs_25C": round(float(enc.arrhenius_factor(th2.T_batt).mean()), 3),
-                                "revenue_usd": round(d2.revenue_usd, 1)}
-        thf = enc.simulate(c, w, q, fan=fan)
-        df = dp.dispatch(prices, battery, power_cap_kw=enc.derate_fraction(thf.T_batt) * battery.power_kw)
-        thf2 = enc.simulate(c, w, df.heat_w(battery.eta_one_way), fan=fan)
-        kwh = thf2.fan_energy_kwh(fan)
+        r = coupled.run(c, w, prices, battery)
+        out["skins"][c.name] = {"summer_mean_batt_C": round(float(r.thermal.celsius()[summer].mean()), 2),
+                                "hours_derated": r.hours_derated,
+                                "aging_rate_vs_25C": round(float(enc.arrhenius_factor(r.thermal.T_batt).mean()), 3),
+                                "revenue_usd": round(r.revenue_usd, 1)}
+        rf = coupled.run(c, w, prices, battery, fan=fan)
+        kwh = rf.thermal.fan_energy_kwh(fan)
         out["skins"][c.name]["with_fan"] = {
-            "summer_mean_batt_C": round(float(thf2.celsius()[summer].mean()), 2),
-            "hours_derated": int((enc.derate_fraction(thf2.T_batt) < 1).sum()),
-            "aging_rate_vs_25C": round(float(enc.arrhenius_factor(thf2.T_batt).mean()), 3),
-            "revenue_usd": round(df.revenue_usd, 1), "fan_hours": round(float(thf2.fan_on.sum())),
+            "summer_mean_batt_C": round(float(rf.thermal.celsius()[summer].mean()), 2),
+            "hours_derated": rf.hours_derated,
+            "aging_rate_vs_25C": round(float(enc.arrhenius_factor(rf.thermal.T_batt).mean()), 3),
+            "revenue_usd": round(rf.revenue_usd, 1), "fan_hours": round(float(rf.thermal.fan_on.sum())),
             "fan_kwh": round(float(kwh.sum()), 1), "fan_cost_usd": round(float(np.sum(prices.to_numpy() * kwh) / 1000), 2)}
     return out
 
