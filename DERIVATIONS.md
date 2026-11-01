@@ -71,7 +71,15 @@ $$C_s\dot T_s = A\,[\text{surface balance}] + UA\,(T_b - T_s) + Q_\text{inv}, \q
 
 The four add up to $c(1-\eta) + d(1/\eta - 1)$, which is everything bought minus everything sold over a day that ends at the charge it started with (`test_battery_heat_is_everything_in_minus_everything_out`). For the cells I use the mean battery round-trip efficiency HTW Berlin measured on 22 home batteries, 95.7% ([Stromspeicher-Inspektion 2025](https://solar.htw-berlin.de/wp-content/uploads/HTW-Stromspeicher-Inspektion-2025.pdf), p. 25), so $\eta_\text{cell} = \sqrt{0.957} = 0.978$ and the inverter gets the rest, $\eta_\text{inv} = 0.971$. That sits between the same study's mean measured discharge conversion efficiency (95.7%, p. 28) and the 97.5% CEC-weighted inverter figure on the [Powerwall 3 datasheet](https://digitalassets.tesla.com/tesla-contents/image/upload/powerwall-3-datasheet-na-en.pdf). About 42% of the loss is then released in the cells. The inverter's share goes into the skin node, as if it were heat-sunk to the enclosure wall.
 
-**Time step.** The skin time constant is $C_s / [A(h + 4\varepsilon\sigma T^3)] \approx 5$ min. Explicit Euler with 1-minute substeps is stable (it needs $\Delta t < 2\tau$).
+**Convection.** The skin loses $h\,(T_s - T_a)$ per m² to the air with $h = 2.8 + 3.0\,V$ W/m²K, the convection-only correlation that the [EnergyPlus Engineering Reference](https://bigladdersoftware.com/epx/docs/23-1/engineering-reference/solar-collectors.html) uses for "the convection heat transfer coefficient from the outer cover to the surrounding air". My first version used $h = 5.7 + 3.8\,V$ on the 10 m wind, but the same reference calls that one "the combined conductance from the outer cover to the surrounding" (citing Duffie & Beckman), meaning it already includes radiation, which the model also adds explicitly. So it counted radiation twice.
+
+$V$ is the wind at the box, not the 10 m reanalysis wind. I bring it down with the ASHRAE power law that EnergyPlus uses for every exterior surface ([Local Wind Speed Calculation](https://bigladdersoftware.com/epx/docs/23-1/engineering-reference/outside-surface-heat-balance.html)):
+
+$$V_z = V_\text{met}\left(\frac{\delta_\text{met}}{z_\text{met}}\right)^{\alpha_\text{met}}\left(\frac{z}{\delta}\right)^{\alpha}$$
+
+with the weather wind treated as a 10 m open-field reading ($\alpha_\text{met} = 0.14$, $\delta_\text{met} = 270$ m) and the box at $z = 1$ m in EnergyPlus's "suburbs" terrain ($\alpha = 0.22$, $\delta = 370$ m). That makes the wind at the box 0.43 times the 10 m wind. Open country would make it 0.72 times and a city 0.21 times; both are in the sensitivity study. Treating a reanalysis grid-cell wind as an open-field station reading is my assumption.
+
+**Time step.** The skin time constant $C_s / [A(h + 4\varepsilon\sigma T^3) + UA]$ is 3 to 7 minutes over 2025's winds. Explicit Euler with 1-minute substeps is stable (it needs $\Delta t < 2\tau$).
 
 **Check:** with constant inputs, the steady state must satisfy $UA(T_b - T_s) = Q_\text{gen}$ (`test_enclosure_settles_to_steady_state`).
 

@@ -26,6 +26,8 @@ from .radiative import (
     SIGMA,
     Coating,
     convection_coefficient,
+    local_wind,
+    combined_coefficient,
     sky_band_emissivities,
     sky_emissivity,
     window_fraction,
@@ -41,6 +43,17 @@ class Enclosure:
     ua_internal: float = 12.0  # W/K, battery <-> skin conductance
     sky_view: float = 0.75  # box: top sees all sky, walls half
     sun_factor: float = 0.55  # mean projected-area fraction of the skin facing the sun, x GHI
+    wind_height_m: float = 1.0  # middle of a ground-standing box
+    terrain: str = "suburbs"
+    convection: str = "convection_only"  # or "combined_10m", my first setup (a combined coefficient on the 10 m wind)
+
+    def h(self, wind_10m) -> np.ndarray:
+        """Outside convection coefficient (W/m^2/K) from the 10 m wind."""
+        if self.convection == "combined_10m":
+            return combined_coefficient(wind_10m)
+        if self.convection != "convection_only":
+            raise ValueError(self.convection)
+        return convection_coefficient(local_wind(wind_10m, self.wind_height_m, self.terrain))
 
 
 @dataclass
@@ -120,7 +133,10 @@ class ThermalResult:
 def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclosure | None = None,
              substeps: int = 60, fan: Fan | None = None, spectral: bool = False,
              q_skin_w: np.ndarray | None = None) -> ThermalResult:
-    """Explicit integration with 1-minute substeps (stable: skin time constant is ~20 min).
+    """Explicit integration with 1-minute substeps.
+
+    The skin's time constant C_s / (A (h + 4 eps sigma T^3) + UA) is 3 to 7 minutes over 2025's
+    winds, so Euler steps of 1 minute are well inside the stability limit of twice that.
 
     ``q_gen_w`` is the heat released in the cells each hour and ``q_skin_w`` (optional) heat put
     straight into the skin, such as an inverter's losses.
@@ -131,7 +147,7 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
     n = len(weather.Ta)
     dt = 3600.0 / substeps
     eps_sky = sky_emissivity(weather.dew_c, weather.cloud)
-    h = convection_coefficient(weather.wind)
+    h = enc.h(weather.wind)
     Ts = Tb = weather.Ta[0]
     out_s, out_b, out_fan = np.empty(n), np.empty(n), np.zeros(n)
     a, e, F = coating.alpha_solar, coating.eps_ir, enc.sky_view

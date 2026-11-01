@@ -44,7 +44,7 @@ coatings = [rad.DARK_PAINT, rad.WHITE_PAINT, rad.IDEAL_COOLER]
 local = w.time.tz_convert("America/Chicago")
 day = local.normalize() == local[np.argmax(w.Ta)].normalize()
 eps_sky = rad.sky_emissivity(w.dew_c, w.cloud)
-h = rad.convection_coefficient(w.wind)
+h = enc.Enclosure().h(w.wind)  # the box's own convection, for the insulated-surface comparison
 fig, ax = plt.subplots(figsize=(7, 4))
 for c in coatings:
     dT = [rad.steady_surface_temperature(c, w.Ta[i], w.ghi[i], eps_sky[i], h[i]) - w.Ta[i] for i in np.where(day)[0]]

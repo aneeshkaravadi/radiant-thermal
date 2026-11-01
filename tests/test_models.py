@@ -153,7 +153,7 @@ def test_skin_temperature_responds_to_absorptance_like_the_linearized_balance():
     w = constant_weather(72, 305.0, ghi=800.0)
     e, a, da = enc.Enclosure(), 0.40, 0.01
     T = [enc.simulate(rad.Coating("c", aa, 0.9), w, np.zeros(72), e).T_skin[-1] for aa in (a, a + da)]
-    h = rad.convection_coefficient(2.0)
+    h = e.h(2.0)
     expected = e.sun_factor * 800.0 / (h + 4 * 0.9 * rad.SIGMA * T[0] ** 3)
     assert (T[1] - T[0]) / da == pytest.approx(expected, rel=0.02)
 
@@ -164,6 +164,17 @@ def test_two_band_enclosure_matches_the_gray_one_for_a_gray_skin():
     gray = enc.simulate(rad.WHITE_PAINT, w, q)
     two = enc.simulate(rad.WHITE_PAINT, w, q, spectral=True)
     assert two.T_batt == pytest.approx(gray.T_batt, abs=1e-9)
+
+
+def test_local_wind_profile_and_convection():
+    """The ASHRAE power law returns the 10 m reading in open country at 10 m, and gets slower lower down
+    and over rougher ground. The convection-only coefficient is below the combined one at every speed."""
+    assert rad.local_wind(3.0, 10.0, "country") == pytest.approx(3.0)
+    assert rad.local_wind(3.0, 1.0, "city") < rad.local_wind(3.0, 1.0, "suburbs") < rad.local_wind(3.0, 1.0, "country") < 3.0
+    v = np.linspace(0, 10, 11)
+    assert np.all(rad.convection_coefficient(v) < rad.combined_coefficient(v))
+    # EnergyPlus's suburban profile at 1 m: (270/10)^0.14 * (1/370)^0.22
+    assert rad.local_wind(1.0, 1.0, "suburbs") == pytest.approx(27**0.14 * (1 / 370) ** 0.22)
 
 
 def test_arrhenius_reference():

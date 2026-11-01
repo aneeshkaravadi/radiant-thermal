@@ -42,8 +42,33 @@ def sky_emissivity(dew_point_c, cloud_fraction=0.0):
 
 
 def convection_coefficient(wind_speed):
-    """External forced/natural convection, h = 5.7 + 3.8 v  (McAdams), W/m^2/K, v in m/s."""
+    """Convection only from an outdoor surface, h = 2.8 + 3.0 v (W/m^2/K), v the local wind speed in m/s.
+
+    The EnergyPlus Engineering Reference uses this for "the convection heat transfer coefficient
+    from the outer cover to the surrounding air" of a solar collector. Radiation is handled
+    separately here, so it must not be in h.
+    """
+    return 2.8 + 3.0 * np.asarray(wind_speed, float)
+
+
+def combined_coefficient(wind_speed):
+    """h = 5.7 + 3.8 v. EnergyPlus calls this the *combined* conductance from a collector cover to the
+    ambient air (citing Duffie & Beckman), so with radiation added separately it counts radiation twice.
+    I used it at first; it's kept only to show how much that mattered."""
     return 5.7 + 3.8 * np.asarray(wind_speed, float)
+
+
+# Wind-profile coefficients (exponent, boundary-layer thickness in m) from ASHRAE Fundamentals 2005,
+# as tabulated in the EnergyPlus Engineering Reference ("Local Wind Speed Calculation"), with the
+# names of EnergyPlus's Terrain options. Weather-station wind is taken as 10 m in open country.
+TERRAIN = {"country": (0.14, 270.0), "suburbs": (0.22, 370.0), "city": (0.33, 460.0)}
+MET_ALPHA, MET_DELTA, MET_HEIGHT = 0.14, 270.0, 10.0
+
+
+def local_wind(wind_10m, height_m: float = 1.0, terrain: str = "suburbs"):
+    """Wind at ``height_m`` above ground: V = V_met (delta_met / z_met)^alpha_met (z / delta)^alpha."""
+    alpha, delta = TERRAIN[terrain]
+    return np.asarray(wind_10m, float) * (MET_DELTA / MET_HEIGHT) ** MET_ALPHA * (height_m / delta) ** alpha
 
 
 C2 = 14387.77  # um K, second radiation constant hc/k
