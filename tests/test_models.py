@@ -94,6 +94,18 @@ def test_enclosure_settles_to_steady_state():
     assert e.ua_internal * (r.T_batt[-1] - r.T_skin[-1]) == pytest.approx(200.0, rel=0.01)
 
 
+def test_heat_into_the_skin_acts_like_extra_absorbed_sunlight():
+    """Q watts put into the skin enter the same balance as Q / (A alpha f_sun) more W/m^2 of sunlight."""
+    n, Q = 48, 150.0
+    e, c = enc.Enclosure(), rad.WHITE_PAINT
+    base = constant_weather(n, 305.0, ghi=400.0)
+    brighter = constant_weather(n, 305.0, ghi=400.0 + Q / (e.area * c.alpha_solar * e.sun_factor))
+    q = np.full(n, 100.0)
+    a = enc.simulate(c, base, q, e, q_skin_w=np.full(n, Q))
+    b = enc.simulate(c, brighter, q, e)
+    assert a.T_batt == pytest.approx(b.T_batt, abs=1e-9) and a.T_skin == pytest.approx(b.T_skin, abs=1e-9)
+
+
 def constant_weather(n, Ta, ghi=0.0, dew=15.0):
     t = pd.date_range("2025-07-01", periods=n, freq="h", tz="UTC")
     return enc.Weather(t, np.full(n, Ta), np.full(n, dew), np.full(n, ghi), np.full(n, 2.0), np.zeros(n))
@@ -158,16 +170,45 @@ def test_arrhenius_reference():
     assert enc.arrhenius_factor(308.15) > 1.5  # ~1.9x per 10 K at 50 kJ/mol
 
 
-def test_dispatch_respects_limits_and_is_profitable():
+def test_dispatch_matches_the_hand_worked_optimum():
+    """$20 for 00-11 UTC and $100 for 12-23 UTC, two UTC days. In Central daylight time that's three local days:
+    Jul 31 19:00-23:00 (cheap only), all of Aug 1 (cheap 0-6, dear 7-18, cheap 19-23) and Aug 2 00:00-18:00.
+    Each local day starts and ends half full (10 of 20 kWh).
+      Jul 31: nothing to gain.
+      Aug 1:  fill 10 -> 20 kWh at $20, empty 20 -> 0 at $100, refill 0 -> 10 at $20.
+      Aug 2:  fill 10 -> 20 at $20, sell 10 kWh of storage at $100.
+    Buying x kWh of storage costs x / eta at the meter and selling it returns x * eta."""
     t = pd.date_range("2025-08-01", periods=48, freq="h", tz="UTC")
     price = pd.Series(np.tile(np.r_[np.full(12, 20.0), np.full(12, 100.0)], 2), index=t)
     b = dp.Battery(20.0, 5.0, 0.95)
+    eta = b.eta_one_way
     r = dp.dispatch(price, b)
+    aug1 = (100 * 20 * eta - 20 * 20 / eta) / 1000
+    aug2 = (100 * 10 * eta - 20 * 10 / eta) / 1000
+    assert r.revenue_usd == pytest.approx(aug1 + aug2, rel=1e-6)
     assert r.soc_kwh.min() >= -1e-6 and r.soc_kwh.max() <= b.energy_kwh + 1e-6
     assert r.charge_kw.max() <= 5 + 1e-9 and r.discharge_kw.max() <= 5 + 1e-9
-    assert r.revenue_usd > 0
+    # Capped at 1 kW the cheap hours run out first: Aug 1 has 12 cheap hours (12 kWh in, 12 eta^2 out),
+    # Aug 2 has 7 before the dear block (7 kWh in, 7 eta^2 out).
     capped = dp.dispatch(price, b, power_cap_kw=np.full(48, 1.0))
-    assert capped.revenue_usd < r.revenue_usd
+    expected = sum((100 * n * eta**2 - 20 * n) / 1000 for n in (12, 7))
+    assert capped.revenue_usd == pytest.approx(expected, rel=1e-6)
+
+
+@pytest.mark.parametrize("cell_round_trip", [0.95**2, 0.957, 0.99])
+def test_battery_heat_is_everything_in_minus_everything_out(cell_round_trip):
+    """Over days that start and end at the same charge, cell heat plus inverter heat must equal
+    the AC energy bought minus the AC energy sold."""
+    t = pd.date_range("2025-08-01 05:00", periods=72, freq="h", tz="UTC")  # three whole Central-time days
+    rng = np.random.default_rng(1)
+    price = pd.Series(rng.uniform(10, 200, 72), index=t)  # synthetic prices, just to make the battery cycle
+    b = dp.Battery(cell_round_trip=cell_round_trip)
+    r = dp.dispatch(price, b)
+    assert r.charge_kw.sum() > 10
+    heat_kwh = (r.cell_heat_w(b).sum() + r.inverter_heat_w(b).sum()) / 1000
+    assert heat_kwh == pytest.approx(r.charge_kw.sum() - r.discharge_kw.sum(), rel=1e-9)
+    if cell_round_trip == pytest.approx(0.95**2):
+        assert r.inverter_heat_w(b).max() == pytest.approx(0.0, abs=1e-6)  # all the loss in the cells
 
 
 @pytest.mark.parametrize("city, zone", [("dallas", "lz_north"), ("houston", "lz_houston")])

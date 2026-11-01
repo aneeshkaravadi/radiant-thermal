@@ -60,9 +60,16 @@ In the IR, most polymer films thicker than about 50 µm are close to opaque, so 
 
 Two lumped nodes with heat capacities $C_s$ (skin) and $C_b$ (cells), coupled by conductance $UA$:
 
-$$C_s\dot T_s = A\,[\text{surface balance}] + UA\,(T_b - T_s), \qquad C_b \dot T_b = Q_\text{gen} - UA\,(T_b - T_s)$$
+$$C_s\dot T_s = A\,[\text{surface balance}] + UA\,(T_b - T_s) + Q_\text{inv}, \qquad C_b \dot T_b = Q_\text{cell} - UA\,(T_b - T_s)$$
 
-**Battery heat.** $Q_\text{gen} = (1-\eta)(P_\text{charge} + P_\text{discharge})$, the one-way conversion loss.
+**Battery heat.** The system's one-way efficiency $\eta = 0.95$ (about 90% round trip) is split between the cells and the inverter, $\eta = \eta_\text{cell}\,\eta_\text{inv}$. Following the energy through a charge $c$ (AC in) and a discharge $d$ (AC out):
+
+| | inverter loss | cell loss |
+|---|---|---|
+| charging | $c\,(1-\eta_\text{inv})$ | $c\,\eta_\text{inv}(1-\eta_\text{cell})$ |
+| discharging | $d\,(1/\eta_\text{inv}-1)$ | $(d/\eta_\text{inv})(1/\eta_\text{cell}-1)$ |
+
+The four add up to $c(1-\eta) + d(1/\eta - 1)$, which is everything bought minus everything sold over a day that ends at the charge it started with (`test_battery_heat_is_everything_in_minus_everything_out`). For the cells I use the mean battery round-trip efficiency HTW Berlin measured on 22 home batteries, 95.7% ([Stromspeicher-Inspektion 2025](https://solar.htw-berlin.de/wp-content/uploads/HTW-Stromspeicher-Inspektion-2025.pdf), p. 25), so $\eta_\text{cell} = \sqrt{0.957} = 0.978$ and the inverter gets the rest, $\eta_\text{inv} = 0.971$. That sits between the same study's mean measured discharge conversion efficiency (95.7%, p. 28) and the 97.5% CEC-weighted inverter figure on the [Powerwall 3 datasheet](https://digitalassets.tesla.com/tesla-contents/image/upload/powerwall-3-datasheet-na-en.pdf). About 42% of the loss is then released in the cells. The inverter's share goes into the skin node, as if it were heat-sunk to the enclosure wall.
 
 **Time step.** The skin time constant is $C_s / [A(h + 4\varepsilon\sigma T^3)] \approx 5$ min. Explicit Euler with 1-minute substeps is stable (it needs $\Delta t < 2\tau$).
 

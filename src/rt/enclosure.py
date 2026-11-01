@@ -1,8 +1,10 @@
 """Outdoor battery enclosure: a two-node thermal model driven by real weather.
 
     skin:     C_s dTs/dt = A [alpha f_sun G + eps (F L_sky + (1-F) sigma Ta^4) - eps sigma Ts^4 - h (Ts - Ta)]
-                           + UA (Tb - Ts)
-    battery:  C_b dTb/dt = Q_gen(t) - UA (Tb - Ts)
+                           + UA (Tb - Ts) + Q_inv(t)
+    battery:  C_b dTb/dt = Q_cell(t) - UA (Tb - Ts)
+
+Q_cell is the heat released in the cells and Q_inv the inverter's, which I take as heat-sunk to the skin.
 
 The coating only enters through alpha and eps on the skin. Everything else is
 the same for each design, so differences in battery temperature come from the
@@ -116,9 +118,12 @@ class ThermalResult:
 
 
 def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclosure | None = None,
-             substeps: int = 60, fan: Fan | None = None, spectral: bool = False) -> ThermalResult:
+             substeps: int = 60, fan: Fan | None = None, spectral: bool = False,
+             q_skin_w: np.ndarray | None = None) -> ThermalResult:
     """Explicit integration with 1-minute substeps (stable: skin time constant is ~20 min).
 
+    ``q_gen_w`` is the heat released in the cells each hour and ``q_skin_w`` (optional) heat put
+    straight into the skin, such as an inverter's losses.
     ``spectral=True`` splits the skin's infrared exchange at the 8-13 um window
     (see radiative.net_heat_out_spectral). It changes nothing for a gray coating.
     """
@@ -135,9 +140,10 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
         s_in, s_out = sky_band_emissivities(eps_sky, weather.Ta)
         fa = window_fraction(weather.Ta)
         ir_in = (e_in * (F * s_in + 1 - F) * fa + e_out * (F * s_out + 1 - F) * (1 - fa)) * SIGMA * weather.Ta**4
+    q_skin = np.zeros(n) if q_skin_w is None else np.asarray(q_skin_w, float)
     running = False
     for i in range(n):
-        Ta, G, es, hi, q = weather.Ta[i], weather.ghi[i], eps_sky[i], h[i], q_gen_w[i]
+        Ta, G, es, hi, q, qs = weather.Ta[i], weather.ghi[i], eps_sky[i], h[i], q_gen_w[i], q_skin[i]
         if spectral:
             incoming = a * enc.sun_factor * G + ir_in[i]
         else:
@@ -156,7 +162,7 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
                 emit = SIGMA * Ts**4 * (e_in * fw + e_out * (1 - fw))
             else:
                 emit = e * SIGMA * Ts**4
-            dTs = (enc.area * (incoming - emit - hi * (Ts - Ta)) + q_int) / enc.skin_heat_capacity
+            dTs = (enc.area * (incoming - emit - hi * (Ts - Ta)) + q_int + qs) / enc.skin_heat_capacity
             dTb = (q - q_int - q_fan) / enc.battery_heat_capacity
             Ts += dTs * dt
             Tb += dTb * dt

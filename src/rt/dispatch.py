@@ -8,6 +8,14 @@ For each day, a linear program picks hourly charge c_h and discharge d_h in [0, 
 
 eta is the one-way efficiency (round trip eta^2). This is perfect-foresight
 arbitrage: an upper bound on energy-only revenue, not a trading strategy.
+
+The one-way loss is split between the cells and the inverter, eta = eta_cell * eta_inv,
+because only the cells' share heats the cells directly:
+
+    charging c (AC in):     inverter loses c (1 - eta_inv),   cells lose c eta_inv (1 - eta_cell)
+    discharging d (AC out): inverter loses d (1/eta_inv - 1), cells lose (d / eta_inv) (1/eta_cell - 1)
+
+which adds up to c (1 - eta) + d (1/eta - 1), everything that goes in minus everything that comes out.
 """
 from __future__ import annotations
 
@@ -18,11 +26,29 @@ import pandas as pd
 from scipy.optimize import linprog
 
 
+# Mean battery round-trip efficiency (energy out over energy in at the battery's own terminals) of the
+# 22 home batteries HTW Berlin measured in its Stromspeicher-Inspektion 2025, p. 25: 95.7 %.
+CELL_ROUND_TRIP_HTW_2025 = 0.957
+
+
 @dataclass
 class Battery:
     energy_kwh: float = 20.0
     power_kw: float = 5.0
-    eta_one_way: float = 0.95
+    eta_one_way: float = 0.95  # whole system, AC to stored energy; round trip about 90 %
+    cell_round_trip: float = CELL_ROUND_TRIP_HTW_2025  # the cells alone; the rest of the loss is the inverter's
+
+    def __post_init__(self):
+        if not self.eta_one_way**2 - 1e-12 <= self.cell_round_trip <= 1.0:
+            raise ValueError("cell round trip must lie between the system's round trip and 1")
+
+    @property
+    def eta_cell(self) -> float:
+        return float(np.sqrt(self.cell_round_trip))
+
+    @property
+    def eta_inverter(self) -> float:
+        return min(1.0, self.eta_one_way / self.eta_cell)
 
 
 @dataclass
@@ -37,9 +63,15 @@ class DispatchResult:
     def revenue_usd(self) -> float:
         return float(np.sum(self.price * (self.discharge_kw - self.charge_kw)) / 1000.0)
 
-    def heat_w(self, eta_one_way: float) -> np.ndarray:
-        """Heat released in the cells: the one-way loss on whatever flows in or out."""
-        return (1 - eta_one_way) * (self.charge_kw + self.discharge_kw) * 1000.0
+    def cell_heat_w(self, b: Battery) -> np.ndarray:
+        """Heat released inside the cells in each hour, W."""
+        ei, ec = b.eta_inverter, b.eta_cell
+        return (self.charge_kw * ei * (1 - ec) + self.discharge_kw / ei * (1 / ec - 1)) * 1000.0
+
+    def inverter_heat_w(self, b: Battery) -> np.ndarray:
+        """Heat released in the inverter and power electronics in each hour, W."""
+        ei = b.eta_inverter
+        return (self.charge_kw * (1 - ei) + self.discharge_kw * (1 / ei - 1)) * 1000.0
 
 
 def _solve_day(price: np.ndarray, b: Battery, power_cap: np.ndarray | None = None):
