@@ -187,7 +187,8 @@ def test_local_wind_profile_and_convection():
 
 def test_arrhenius_reference():
     assert enc.arrhenius_factor(298.15) == pytest.approx(1.0)
-    assert enc.arrhenius_factor(308.15) > 1.5  # ~1.9x per 10 K at 50 kJ/mol
+    # 37.3 kJ/mol: exp(37300 / 8.314462 * (1/298.15 - 1/308.15)) = 1.63 for 10 K
+    assert enc.arrhenius_factor(308.15) == pytest.approx(1.630, abs=0.001)
 
 
 def test_dispatch_matches_the_hand_worked_optimum():

@@ -107,9 +107,9 @@ from the battery node. Here $\epsilon$ is how close the exhaust air gets to the 
 
 ## 5. Aging and derating
 
-**Arrhenius aging.** Calendar aging accelerates with temperature: $k(T)/k(25^\circ\text{C}) = \exp\!\left[\frac{E_a}{R}\left(\frac{1}{298.15} - \frac{1}{T}\right)\right]$. I use $E_a = 50$ kJ/mol; the literature for Li-ion calendar fade spans about 30–60 kJ/mol. I report the time-averaged *relative* rate, not absolute capacity fade, because that needs cell-specific data.
+**Arrhenius aging.** Aging accelerates with temperature: $k(T)/k(25^\circ\text{C}) = \exp\!\left[\frac{E_a}{R}\left(\frac{1}{298.15} - \frac{1}{T}\right)\right]$. I use $E_a = 37.3$ kJ/mol, the activation energy Yagci et al. (J. Energy Storage 124, 116774, 2025) found for large-format stationary-storage LFP cells over all of their calendar and cycling tests at 35 and 50 °C. My first version used 50 kJ/mol without a source. I report the time-averaged *relative* rate, not absolute capacity fade, because that needs cell-specific data. The aging rate doesn't feed back into revenue, so $E_a$ only changes the aging numbers.
 
-**Derating.** Power is available in proportion to $(55 - T)/(55 - 45)$, clipped to [0, 1]. That is a generic BMS policy, not a specific product's.
+**Derating.** Power is available in proportion to $(55 - T)/(55 - 45)$, clipped to [0, 1], with $T$ the cells' mean temperature over the hour. That policy is my assumption, not any product's. For scale, the [Powerwall 3 datasheet](https://digitalassets.tesla.com/tesla-contents/image/upload/powerwall-3-datasheet-na-en.pdf) says performance "may be de-rated at operating temperatures above 40°C", meaning the air around the unit.
 
 ## 6. Dispatch LP (`dispatch.py`)
 

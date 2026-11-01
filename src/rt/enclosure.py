@@ -193,12 +193,22 @@ def simulate(coating: Coating, weather: Weather, q_gen_w: np.ndarray, enc: Enclo
     return ThermalResult(weather.time, out_s, out_b, weather.Ta, None if fan is None else out_fan)
 
 
-def arrhenius_factor(T_kelvin, Ea_j_mol: float = 50e3, T_ref: float = 298.15):
-    """Calendar-aging rate relative to 25 C. Literature Ea for Li-ion calendar aging is roughly 30-60 kJ/mol."""
+# Activation energy for capacity fade of large-format stationary-storage LFP cells, 37.3 kJ/mol over all of
+# their calendar and cycling protocols at 35 and 50 C (Yagci, Richter, Behmann and Bessler, J. Energy
+# Storage 124, 116774, 2025).
+EA_LFP_J_MOL = 37.3e3
+
+
+def arrhenius_factor(T_kelvin, Ea_j_mol: float = EA_LFP_J_MOL, T_ref: float = 298.15):
+    """Aging rate relative to 25 C, exp[Ea/R (1/T_ref - 1/T)]."""
     return np.exp(Ea_j_mol / 8.314462 * (1.0 / T_ref - 1.0 / np.asarray(T_kelvin)))
 
 
 def derate_fraction(T_kelvin, start_c: float = 45.0, stop_c: float = 55.0):
-    """Fraction of rated power available: 1 below start_c, linear to 0 at stop_c (a typical BMS policy)."""
+    """Fraction of rated power available: 1 below start_c, linear to 0 at stop_c.
+
+    This cell-temperature policy is my assumption, not a datasheet's. For scale, the Powerwall 3
+    datasheet says performance "may be de-rated at operating temperatures above 40 C", meaning air temperature.
+    """
     Tc = np.asarray(T_kelvin) - 273.15
     return np.clip((stop_c - Tc) / (stop_c - start_c), 0.0, 1.0)
