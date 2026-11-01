@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 from .radiative import (
+    CLOUD_EFFECT,
     SIGMA,
     Coating,
     convection_coefficient,
@@ -79,6 +80,12 @@ class Fan:
         return self.effectiveness * 1.16 * 1007.0 * self.flow_m3_s
 
 
+def instant_to_hour(x) -> np.ndarray:
+    """Average of instantaneous values at each hour's start and end (the last hour keeps its last value)."""
+    x = np.asarray(x, float)
+    return np.r_[0.5 * (x[:-1] + x[1:]), x[-1]]
+
+
 @dataclass
 class Weather:
     """Weather for each simulated hour. Row i holds the conditions over [time[i], time[i] + 1 h).
@@ -92,10 +99,11 @@ class Weather:
     ghi: np.ndarray  # W/m^2
     wind: np.ndarray  # m/s at 10 m
     cloud: np.ndarray  # (n, 3): low, mid and high cloud cover, 0..1
+    cloud_effect: tuple[float, float, float] = CLOUD_EFFECT  # see radiative.sky_emissivity
 
     @property
     def eps_sky(self) -> np.ndarray:
-        return sky_emissivity(self.dew_c, *np.asarray(self.cloud, float).T)
+        return sky_emissivity(self.dew_c, *np.asarray(self.cloud, float).T, effect=self.cloud_effect)
 
     @classmethod
     def from_csv(cls, path) -> Weather:
@@ -108,11 +116,7 @@ class Weather:
         gets no sunlight and keeps its last instantaneous values.
         """
         d = pd.read_csv(path, parse_dates=["time"])
-
-        def midpoint(x):
-            x = np.asarray(x, float)
-            return np.r_[0.5 * (x[:-1] + x[1:]), x[-1]]
-
+        midpoint = instant_to_hour
         ghi = np.r_[d["shortwave_radiation"].to_numpy(float)[1:], 0.0]
         cloud = np.column_stack([midpoint(d[f"cloud_cover_{k}"]) / 100.0 for k in ("low", "mid", "high")])
         return cls(pd.DatetimeIndex(d["time"]), midpoint(d["temperature_2m"]) + 273.15, midpoint(d["dew_point_2m"]),

@@ -61,7 +61,8 @@ def equilibrium_temperature(c: Coating, env: Environment, q_internal_w_m2: float
 # Spacecraft surfaces as measured fresh (beginning of life) in Henninger, "Solar Absorptance and Thermal
 # Emittance of Some Common Spacecraft Thermal-Control Coatings", NASA RP-1121 (1984). UV and atomic oxygen
 # raise the absorptance of paints over a mission, so these are best-case values.
-OSR = Coating("optical solar reflector", 0.07, 0.79, "NASA RP-1121: Helios second-surface mirror, silver backing, initial")
+OSR = Coating("optical solar reflector", 0.07, 0.79,
+              "NASA RP-1121: Helios second-surface mirror, silver backing, initial")
 WHITE_SPACE_PAINT = Coating("white thermal-control paint", 0.20, 0.90, "NASA RP-1121: Zerlauts S-13G white paint")
 BLACK_PAINT = Coating("black paint", 0.96, 0.91, "NASA RP-1121: Chemglaze Z306 black paint")
 
@@ -101,8 +102,9 @@ def orbit_transient(c: Coating, sunlit_env: Environment, areal_heat_capacity: fl
 
     In sunlight it absorbs ``absorbed_flux(c, sunlit_env)`` the whole time, including the full albedo
     term, although albedo really fades toward the terminator, so this overstates the sunlit input near
-    the ends of the sunlit arc; in eclipse only Earth's infrared, F_earth eps q_IR. The panel is one thermal mass, c dT/dt = q_int + q_abs - eps sigma T^4,
-    stepped with RK4, starting at the sunlit equilibrium unless T0 is given.
+    the ends of the sunlit arc; in eclipse only Earth's infrared, F_earth eps q_IR. The panel is one
+    thermal mass, c dT/dt = q_int + q_abs - eps sigma T^4, stepped with RK4, starting at the sunlit
+    equilibrium unless T0 is given.
     Returns time (s), temperature (K) and a sunlit flag for each step.
     """
     period = orbit_period(altitude_m)

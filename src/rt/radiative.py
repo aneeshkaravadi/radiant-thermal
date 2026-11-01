@@ -14,7 +14,7 @@ full sun. That is passive daytime radiative cooling.
 ``net_heat_out`` treats the infrared as one gray band. ``net_heat_out_spectral``
 splits it at the 8-13 um window: the sky is taken as black outside the window
 and partly transparent inside it, with the window's emissivity set so the total
-still matches Berdahl & Martin. A gray surface gets exactly the same answer
+still matches the sky model (Berdahl & Martin plus clouds). A gray surface gets exactly the same answer
 either way; a selective emitter (one that emits mainly inside the window) only
 gets the right answer from the two-band version.
 """
@@ -52,7 +52,7 @@ def sky_emissivity(dew_point_c, low=0.0, mid=0.0, high=0.0, effect=CLOUD_EFFECT)
     clear = clear_sky_emissivity(dew_point_c)
     covers = [np.clip(np.asarray(c, float), 0.0, 1.0) for c in (low, mid, high)]
     gap_open = 1.0
-    for k, c in zip(effect, covers):
+    for k, c in zip(effect, covers, strict=True):
         gap_open = gap_open * (1.0 - k * c)
     return clear + (1.0 - clear) * (1.0 - gap_open)
 
@@ -220,7 +220,8 @@ def cooling_power_at_ambient(coating: Coating, Ta, G, eps_sky, F_sky=1.0, spectr
     return float(f(Ta, coating, Ta, G, eps_sky, 0.0, F_sky=F_sky))
 
 
-# Representative coatings for comparison. Replace with datasheet values for real designs.
-DARK_PAINT = Coating("dark gray paint", 0.75, 0.90, "representative")
-WHITE_PAINT = Coating("white paint", 0.25, 0.90, "representative")
-IDEAL_COOLER = Coating("ideal radiative cooler", 0.04, 0.95, "upper-bound reference")
+# My assumptions for fresh paint, not measured values; replace with datasheet values for a real design.
+# For scale, NASA RP-1121 (Henninger 1984) lists a white house paint at alpha 0.30, eps 0.90.
+DARK_PAINT = Coating("dark gray paint", 0.75, 0.90, "assumed")
+WHITE_PAINT = Coating("white paint", 0.25, 0.90, "assumed")
+IDEAL_COOLER = Coating("ideal radiative cooler", 0.04, 0.95, "hypothetical upper bound")

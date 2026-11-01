@@ -38,8 +38,8 @@ def read_station(src: Path, station: str) -> pd.DataFrame:
             if len(v) < 48:
                 continue
             y, _, mo, dy, hh, mm = (int(x) for x in v[:6])
-            r = dict(zip(NAMES, (float(x) for x in v[8::2])))
-            q = dict(zip(NAMES, (int(x) for x in v[9::2])))
+            r = dict(zip(NAMES, (float(x) for x in v[8::2]), strict=False))  # after 8 date fields, value and flag alternate
+            q = dict(zip(NAMES, (int(x) for x in v[9::2]), strict=False))
             good = q["dw_ir"] == 0 and q["temp"] == 0 and q["rh"] == 0 and r["dw_ir"] > 0 and r["rh"] > 0
             rows.append((pd.Timestamp(year=y, month=mo, day=dy, hour=hh, minute=mm, tz="UTC"),
                          *((r["dw_ir"], r["temp"], r["rh"]) if good else (np.nan,) * 3)))

@@ -34,7 +34,7 @@ fig, axes = plt.subplots(1, 2, figsize=(11, 3.8), sharey=True)
 keys = ["gwn_01", "gwn_07", "dra_01", "dra_07"]
 names = {"gwn": "Goodwin Creek", "dra": "Desert Rock"}
 x = np.arange(len(keys))
-for ax, stat in zip(axes, ("bias", "rms")):
+for ax, stat in zip(axes, ("bias", "rms"), strict=True):
     for k, label in enumerate(models):
         vals = [out["open_meteo_inputs"][label][key]["all"][stat] for key in keys]
         ax.bar(x + (k - 1) * 0.27, vals, 0.27, label=label)
