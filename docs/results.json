@@ -405,7 +405,11 @@
         "black_total",
         42.1
       ]
-    }
+    },
+    "range_usd_without_my_first_choices": [
+      13.0,
+      67.2
+    ]
   },
   "radiator_environment": {
     "solar_flux_W_m2": 1423.0,

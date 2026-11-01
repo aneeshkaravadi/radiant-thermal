@@ -304,6 +304,14 @@ BASE_LABEL = {"terrain": "suburbs", "cell_round_trip": battery.cell_round_trip, 
 VALUE_LABEL = {"country": "open country", "city": "city", 0.978: "0.978 (best HTW)", 0.95**2: "0.9025 (all loss\nin cells, my first)",
                "outside": "outside the box", "combined_10m": "5.7+3.8V on the\n10 m wind (my first)",
                "none": "no clouds", "black_total": "all cloud black\n(my first)"}
+# The ends that are my first setup's choices, which I've since found were wrong. The plausible range leaves them out.
+MY_FIRST_CHOICES = {("cell_round_trip", "high"), ("convection", "low"), ("clouds", "high")}
+
+
+def plausible_range(sens, rows):
+    vals = [sens[k][end][1] for k in rows for end in ("low", "high") if end in sens[k] and (k, end) not in MY_FIRST_CHOICES]
+    vals.append(sens["white_minus_dark_usd_base"])
+    return [min(vals), max(vals)]
 
 
 def physics_case(field, value):
@@ -369,9 +377,11 @@ def draw_sensitivity(sens, rows):
     ax.set_yticks(range(len(order)), [f"{sens[f]['label']} (base {base_text(f)})" for f in order], fontsize=7.5)
     ax.set_xlabel("white paint's advantage over dark gray, 2025 (\\$ per battery)")
     lo, hi = sens["range_usd"]
+    plo, phi = sens["range_usd_without_my_first_choices"] = plausible_range(sens, rows)
     ax.set_xlim(min(0, lo) - 30, hi + 30)
     ax.set_xticks(np.arange(0, hi + 30, 20))
-    ax.set_title(f"One assumption at a time: white paint's advantage runs from \\${lo:.0f} to \\${hi:.0f}", fontsize=10)
+    ax.set_title(f"One assumption at a time: white paint's advantage runs from \\${plo:.0f} to \\${phi:.0f}\n"
+                 f"(\\${lo:.0f} to \\${hi:.0f} counting the choices my first setup made)", fontsize=10)
     save(fig, "assumption_sensitivity.png")
 
 
@@ -438,6 +448,7 @@ if __name__ == "__main__":
     results = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
     if args.part in REDRAW:
         REDRAW[args.part](results)
+        RESULTS.write_text(json.dumps(results, indent=2))
     for name, fn in PARTS.items():
         if args.part in (name, "all"):
             fn(results)
