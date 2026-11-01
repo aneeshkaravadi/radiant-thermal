@@ -2,51 +2,61 @@
   "Dallas (LZ_NORTH)": {
     "upper_bound_usd": 319.3,
     "summer_mean_air_C": 28.9,
+    "annual_mean_air_C": 20.19,
     "summer_mean_dew_point_C": 20.99,
+    "summer_mean_wind_10m_m_s": 2.71,
+    "summer_mean_ghi_W_m2": 269.1,
+    "summer_mean_sky_emissivity": 0.89,
     "skins": {
       "dark gray paint": {
-        "summer_mean_batt_C": 42.33,
-        "hours_derated": 1195,
-        "aging_rate_vs_25C": 2.288,
-        "revenue_usd": 263.5,
+        "summer_mean_batt_C": 42.19,
+        "hours_derated": 1138,
+        "aging_rate_vs_25C": 1.632,
+        "revenue_usd": 282.0,
+        "lost_usd": 37.3,
         "with_fan": {
-          "summer_mean_batt_C": 34.75,
-          "hours_derated": 2,
-          "aging_rate_vs_25C": 1.545,
+          "summer_mean_batt_C": 34.39,
+          "hours_derated": 3,
+          "aging_rate_vs_25C": 1.265,
           "revenue_usd": 319.3,
-          "fan_hours": 2863,
-          "fan_kwh": 85.9,
-          "fan_cost_usd": 3.4
+          "lost_usd": 0.0,
+          "fan_hours": 2192,
+          "fan_kwh": 65.8,
+          "fan_cost_usd": 2.63
         }
       },
       "white paint": {
-        "summer_mean_batt_C": 40.68,
-        "hours_derated": 339,
-        "aging_rate_vs_25C": 2.009,
-        "revenue_usd": 303.6,
+        "summer_mean_batt_C": 37.37,
+        "hours_derated": 21,
+        "aging_rate_vs_25C": 1.289,
+        "revenue_usd": 319.0,
+        "lost_usd": 0.3,
         "with_fan": {
-          "summer_mean_batt_C": 33.98,
+          "summer_mean_batt_C": 33.24,
           "hours_derated": 0,
-          "aging_rate_vs_25C": 1.463,
+          "aging_rate_vs_25C": 1.164,
           "revenue_usd": 319.3,
-          "fan_hours": 2162,
-          "fan_kwh": 64.8,
-          "fan_cost_usd": 2.64
+          "lost_usd": 0.0,
+          "fan_hours": 1365,
+          "fan_kwh": 40.9,
+          "fan_cost_usd": 1.84
         }
       },
       "ideal radiative cooler": {
-        "summer_mean_batt_C": 39.74,
-        "hours_derated": 208,
-        "aging_rate_vs_25C": 1.883,
-        "revenue_usd": 312.1,
+        "summer_mean_batt_C": 34.65,
+        "hours_derated": 0,
+        "aging_rate_vs_25C": 1.145,
+        "revenue_usd": 319.3,
+        "lost_usd": 0.0,
         "with_fan": {
-          "summer_mean_batt_C": 33.4,
+          "summer_mean_batt_C": 32.46,
           "hours_derated": 0,
-          "aging_rate_vs_25C": 1.414,
+          "aging_rate_vs_25C": 1.09,
           "revenue_usd": 319.3,
-          "fan_hours": 1734,
-          "fan_kwh": 52.0,
-          "fan_cost_usd": 2.09
+          "lost_usd": 0.0,
+          "fan_hours": 542,
+          "fan_kwh": 16.2,
+          "fan_cost_usd": 0.81
         }
       }
     }
@@ -54,52 +64,168 @@
   "Houston (LZ_HOUSTON)": {
     "upper_bound_usd": 290.4,
     "summer_mean_air_C": 28.21,
+    "annual_mean_air_C": 21.84,
     "summer_mean_dew_point_C": 23.56,
+    "summer_mean_wind_10m_m_s": 1.94,
+    "summer_mean_ghi_W_m2": 253.6,
+    "summer_mean_sky_emissivity": 0.912,
     "skins": {
       "dark gray paint": {
-        "summer_mean_batt_C": 42.51,
-        "hours_derated": 1308,
-        "aging_rate_vs_25C": 2.473,
-        "revenue_usd": 241.8,
+        "summer_mean_batt_C": 42.42,
+        "hours_derated": 1231,
+        "aging_rate_vs_25C": 1.759,
+        "revenue_usd": 261.2,
+        "lost_usd": 29.2,
         "with_fan": {
-          "summer_mean_batt_C": 34.23,
-          "hours_derated": 2,
-          "aging_rate_vs_25C": 1.6,
+          "summer_mean_batt_C": 34.07,
+          "hours_derated": 0,
+          "aging_rate_vs_25C": 1.334,
           "revenue_usd": 290.4,
-          "fan_hours": 3153,
-          "fan_kwh": 94.6,
-          "fan_cost_usd": 3.92
+          "lost_usd": 0.0,
+          "fan_hours": 2350,
+          "fan_kwh": 70.5,
+          "fan_cost_usd": 2.99
         }
       },
       "white paint": {
-        "summer_mean_batt_C": 41.09,
-        "hours_derated": 399,
-        "aging_rate_vs_25C": 2.191,
-        "revenue_usd": 277.5,
+        "summer_mean_batt_C": 37.64,
+        "hours_derated": 9,
+        "aging_rate_vs_25C": 1.403,
+        "revenue_usd": 289.3,
+        "lost_usd": 1.0,
         "with_fan": {
-          "summer_mean_batt_C": 33.46,
+          "summer_mean_batt_C": 33.03,
           "hours_derated": 0,
-          "aging_rate_vs_25C": 1.526,
+          "aging_rate_vs_25C": 1.247,
           "revenue_usd": 290.4,
-          "fan_hours": 2457,
-          "fan_kwh": 73.7,
-          "fan_cost_usd": 3.1
+          "lost_usd": 0.0,
+          "fan_hours": 1407,
+          "fan_kwh": 42.2,
+          "fan_cost_usd": 1.99
         }
       },
       "ideal radiative cooler": {
-        "summer_mean_batt_C": 40.1,
-        "hours_derated": 259,
-        "aging_rate_vs_25C": 2.055,
-        "revenue_usd": 284.2,
+        "summer_mean_batt_C": 34.87,
+        "hours_derated": 0,
+        "aging_rate_vs_25C": 1.253,
+        "revenue_usd": 290.4,
+        "lost_usd": 0.0,
         "with_fan": {
-          "summer_mean_batt_C": 33.0,
+          "summer_mean_batt_C": 32.44,
           "hours_derated": 0,
-          "aging_rate_vs_25C": 1.483,
+          "aging_rate_vs_25C": 1.185,
           "revenue_usd": 290.4,
-          "fan_hours": 1959,
-          "fan_kwh": 58.8,
-          "fan_cost_usd": 2.45
+          "lost_usd": 0.0,
+          "fan_hours": 540,
+          "fan_kwh": 16.2,
+          "fan_cost_usd": 0.8
         }
+      }
+    }
+  },
+  "attribution_dark_box": {
+    "skin": "dark gray paint",
+    "note": "each row: the starting city with one input group from the other city",
+    "Houston with Dallas's": {
+      "nothing swapped": {
+        "summer_mean_batt_C": 42.42,
+        "hours_derated": 1231,
+        "aging_rate_vs_25C": 1.759,
+        "revenue_usd": 261.2,
+        "lost_usd": 29.2
+      },
+      "dew point": {
+        "summer_mean_batt_C": 42.1,
+        "hours_derated": 1119,
+        "aging_rate_vs_25C": 1.723,
+        "revenue_usd": 264.5,
+        "lost_usd": 25.9
+      },
+      "wind": {
+        "summer_mean_batt_C": 42.04,
+        "hours_derated": 1175,
+        "aging_rate_vs_25C": 1.745,
+        "revenue_usd": 263.7,
+        "lost_usd": 26.7
+      },
+      "air temperature": {
+        "summer_mean_batt_C": 42.72,
+        "hours_derated": 1209,
+        "aging_rate_vs_25C": 1.669,
+        "revenue_usd": 254.5,
+        "lost_usd": 35.9
+      },
+      "sunlight": {
+        "summer_mean_batt_C": 42.64,
+        "hours_derated": 1324,
+        "aging_rate_vs_25C": 1.772,
+        "revenue_usd": 251.2,
+        "lost_usd": 39.2
+      },
+      "clouds": {
+        "summer_mean_batt_C": 42.35,
+        "hours_derated": 1184,
+        "aging_rate_vs_25C": 1.742,
+        "revenue_usd": 261.9,
+        "lost_usd": 28.5
+      },
+      "prices": {
+        "summer_mean_batt_C": 42.53,
+        "hours_derated": 1319,
+        "aging_rate_vs_25C": 1.777,
+        "revenue_usd": 287.4,
+        "lost_usd": 32.0
+      }
+    },
+    "Dallas with Houston's": {
+      "nothing swapped": {
+        "summer_mean_batt_C": 42.19,
+        "hours_derated": 1138,
+        "aging_rate_vs_25C": 1.632,
+        "revenue_usd": 282.0,
+        "lost_usd": 37.3
+      },
+      "dew point": {
+        "summer_mean_batt_C": 42.51,
+        "hours_derated": 1229,
+        "aging_rate_vs_25C": 1.669,
+        "revenue_usd": 277.8,
+        "lost_usd": 41.5
+      },
+      "wind": {
+        "summer_mean_batt_C": 42.64,
+        "hours_derated": 1175,
+        "aging_rate_vs_25C": 1.648,
+        "revenue_usd": 278.2,
+        "lost_usd": 41.1
+      },
+      "air temperature": {
+        "summer_mean_batt_C": 41.92,
+        "hours_derated": 1188,
+        "aging_rate_vs_25C": 1.715,
+        "revenue_usd": 290.6,
+        "lost_usd": 28.7
+      },
+      "sunlight": {
+        "summer_mean_batt_C": 41.97,
+        "hours_derated": 1135,
+        "aging_rate_vs_25C": 1.618,
+        "revenue_usd": 289.1,
+        "lost_usd": 30.2
+      },
+      "clouds": {
+        "summer_mean_batt_C": 42.25,
+        "hours_derated": 1171,
+        "aging_rate_vs_25C": 1.654,
+        "revenue_usd": 280.1,
+        "lost_usd": 39.2
+      },
+      "prices": {
+        "summer_mean_batt_C": 42.08,
+        "hours_derated": 1097,
+        "aging_rate_vs_25C": 1.616,
+        "revenue_usd": 256.8,
+        "lost_usd": 33.6
       }
     }
   }

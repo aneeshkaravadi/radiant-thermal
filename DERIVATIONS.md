@@ -46,7 +46,7 @@ Under overcast skies the first model read 43 W/m² high at Goodwin Creek in July
 
 $$F(\lambda T) = \frac{15}{\pi^4}\sum_{n=1}^{\infty} \frac{e^{-nz}}{n}\left(z^3 + \frac{3z^2}{n} + \frac{6z}{n^2} + \frac{6}{n^3}\right), \qquad z = \frac{C_2}{\lambda T}$$
 
-(checked against direct integration of Planck's law). At 300 K the window holds 32% of the emission. Outside the window, water vapor and CO₂ make the sky nearly black, so I take its emissivity there as 1. Inside, it gets the emissivity that keeps the total at the Berdahl–Martin value:
+(checked against direct integration of Planck's law). At 300 K the window holds 32% of the emission. Outside the window, water vapor and CO₂ make the sky nearly black, so I take its emissivity there as 1. Inside, it gets the emissivity that keeps the total at the sky model's value (clear sky plus clouds):
 
 $$\varepsilon_\text{in} = 1 - \frac{1 - \varepsilon_\text{sky}}{f_w(T_a)}$$
 
@@ -76,6 +76,8 @@ Two lumped nodes with heat capacities $C_s$ (skin) and $C_b$ (cells), coupled by
 
 $$C_s\dot T_s = A\,[\text{surface balance}] + UA\,(T_b - T_s) + Q_\text{inv}, \qquad C_b \dot T_b = Q_\text{cell} - UA\,(T_b - T_s)$$
 
+**Skins.** Dark gray paint ($\alpha = 0.75$), white paint ($\alpha = 0.25$), both with $\varepsilon = 0.90$, are my assumptions for fresh paint, not measurements. For scale, NASA RP-1121 (Henninger 1984) lists a white house paint at $\alpha = 0.30$, $\varepsilon = 0.90$. The ideal radiative cooler ($\alpha = 0.04$, $\varepsilon = 0.95$) is a hypothetical upper bound.
+
 **Battery heat.** The system's one-way efficiency $\eta = 0.95$ (about 90% round trip) is split between the cells and the inverter, $\eta = \eta_\text{cell}\,\eta_\text{inv}$. Following the energy through a charge $c$ (AC in) and a discharge $d$ (AC out):
 
 | | inverter loss | cell loss |
@@ -83,7 +85,7 @@ $$C_s\dot T_s = A\,[\text{surface balance}] + UA\,(T_b - T_s) + Q_\text{inv}, \q
 | charging | $c\,(1-\eta_\text{inv})$ | $c\,\eta_\text{inv}(1-\eta_\text{cell})$ |
 | discharging | $d\,(1/\eta_\text{inv}-1)$ | $(d/\eta_\text{inv})(1/\eta_\text{cell}-1)$ |
 
-The four add up to $c(1-\eta) + d(1/\eta - 1)$, which is everything bought minus everything sold over a day that ends at the charge it started with (`test_battery_heat_is_everything_in_minus_everything_out`). For the cells I use the mean battery round-trip efficiency HTW Berlin measured on 22 home batteries, 95.7% ([Stromspeicher-Inspektion 2025](https://solar.htw-berlin.de/wp-content/uploads/HTW-Stromspeicher-Inspektion-2025.pdf), p. 25), so $\eta_\text{cell} = \sqrt{0.957} = 0.978$ and the inverter gets the rest, $\eta_\text{inv} = 0.971$. That sits between the same study's mean measured discharge conversion efficiency (95.7%, p. 28) and the 97.5% CEC-weighted inverter figure on the [Powerwall 3 datasheet](https://digitalassets.tesla.com/tesla-contents/image/upload/powerwall-3-datasheet-na-en.pdf). About 42% of the loss is then released in the cells. The inverter's share goes into the skin node, as if it were heat-sunk to the enclosure wall.
+The four add up to $c(1-\eta) + d(1/\eta - 1)$, which is everything bought minus everything sold over a day that ends at the charge it started with (`test_battery_heat_is_everything_in_minus_everything_out`). For the cells I use the mean battery round-trip efficiency HTW Berlin measured on 22 home batteries, 95.7% ([Stromspeicher-Inspektion 2025](https://solar.htw-berlin.de/wp-content/uploads/HTW-Stromspeicher-Inspektion-2025.pdf), p. 25), so $\eta_\text{cell} = \sqrt{0.957} = 0.978$ and the inverter gets the rest, $\eta_\text{inv} = 0.971$. That sits between the same study's mean measured discharge conversion efficiency (95.7%, p. 28) and the 97.5% CEC-weighted solar-to-grid efficiency on the [Powerwall 3 datasheet](https://digitalassets.tesla.com/tesla-contents/image/upload/powerwall-3-datasheet-na-en.pdf), which is one pass through its inverter. About 43% of the loss is then released in the cells (`docs/results.json`, `battery`). My first version put all of it in the cells and computed discharge heat as $d(1-\eta)$ instead of $d(1/\eta - 1)$. The inverter's share goes into the skin node, as if it were heat-sunk to the enclosure wall.
 
 **Convection.** The skin loses $h\,(T_s - T_a)$ per m² to the air with $h = 2.8 + 3.0\,V$ W/m²K, the convection-only correlation that the [EnergyPlus Engineering Reference](https://bigladdersoftware.com/epx/docs/23-1/engineering-reference/solar-collectors.html) uses for "the convection heat transfer coefficient from the outer cover to the surrounding air". My first version used $h = 5.7 + 3.8\,V$ on the 10 m wind, but the same reference calls that one "the combined conductance from the outer cover to the surrounding" (citing Duffie & Beckman), meaning it already includes radiation, which the model also adds explicitly. So it counted radiation twice.
 
@@ -95,7 +97,7 @@ with the weather wind treated as a 10 m open-field reading ($\alpha_\text{met} =
 
 **Time step.** The skin time constant $C_s / [A(h + 4\varepsilon\sigma T^3) + UA]$ is 3 to 7 minutes over 2025's winds. Explicit Euler with 1-minute substeps is stable (it needs $\Delta t < 2\tau$).
 
-**Check:** with constant inputs, the steady state must satisfy $UA(T_b - T_s) = Q_\text{gen}$ (`test_enclosure_settles_to_steady_state`).
+**Checks:** with constant inputs, the steady state must satisfy $UA(T_b - T_s) = Q_\text{cell}$ (`test_enclosure_settles_to_steady_state`), and heat $Q$ put into the skin must act exactly like $Q/(A\,\alpha f)$ more W/m² of sunlight (`test_heat_into_the_skin_acts_like_extra_absorbed_sunlight`).
 
 **Fan.** A ventilation fan moving $\dot V$ of outside air past the cells removes
 
@@ -103,7 +105,7 @@ $$Q_\text{fan} = \epsilon\,\rho c_p \dot V\,(T_b - T_a)$$
 
 from the battery node. Here $\epsilon$ is how close the exhaust air gets to the cell temperature (0.5), and $\rho c_p \approx 1168$ J/m³K for air near 30 °C. At 0.05 m³/s that's 29 W/K, against 12 W/K through the skin. A thermostat on the cells switches it on above 35 °C and off below 32 °C. The gap between them keeps it from switching every substep. It also only runs while $T_a < T_b$, because otherwise ventilation would heat the cells. It draws 30 W while running, priced at the hour's day-ahead price.
 
-**Checks:** a fan that never starts leaves every temperature identical. An always-on fan settles where $UA(T_b - T_s) + Q_\text{fan} = Q_\text{gen}$. With cool air and a load that would take a passive box to about 45 °C, the cells cycle inside the 32–35 °C band. With the air hotter than the cells, the fan stays off even above its set point (`tests/test_models.py`).
+**Checks:** a fan that never starts leaves every temperature identical. An always-on fan settles where $UA(T_b - T_s) + Q_\text{fan} = Q_\text{cell}$. With cool air and a load that would take a passive box to about 45 °C, the cells cycle inside the 32–35 °C band. With the air hotter than the cells, the fan stays off even above its set point (`tests/test_models.py`).
 
 ## 5. Aging and derating
 
@@ -125,7 +127,7 @@ It is linear, so the HiGHS solver returns the global optimum in milliseconds per
 2. tighten the caps, $\text{cap}_k = \min(\text{cap}_{k-1},\ P\,\text{derate}(T_k))$
 3. re-dispatch under $\text{cap}_k$ and re-simulate, and stop once every hour satisfies $\max(c_h, d_h) \le P\,\text{derate}(T_h)$ to within 1 W
 
-$T_h$ here is the cells' mean temperature over hour $h$. My first version did a single re-dispatch with caps from the uncapped schedule's temperatures and claimed that was enough. It wasn't: repeating it flips between two schedules, and the one I reported asked for more power than its own temperatures allowed in 182 hours. Because these caps only tighten, the loop can't oscillate, and it settles in 3 to 8 passes. The result is a feasible schedule rather than necessarily the best one, so its revenue is a lower bound on what a perfect-foresight battery could earn under derating, with the uncapped dispatch as the upper bound. `test_coupled_dispatch_never_asks_for_more_than_its_own_temperatures_allow` checks the stopping condition on two hot weeks.
+$T_h$ here is the cells' mean temperature over hour $h$. My first version did a single re-dispatch with caps from the uncapped schedule's temperatures and claimed that was enough. It wasn't: repeating it flips between two schedules, and the one I reported asked for more power than its own temperatures allowed in 182 hours. Because these caps only tighten, the loop can't oscillate. For the three skins in 2025 it settles in at most 7 passes (`coupling_passes` in `docs/results.json`), and days whose caps didn't change reuse their previous LP solution. The result is a feasible schedule rather than necessarily the best one, so its revenue is a lower bound on what a perfect-foresight battery could earn under derating, with the uncapped dispatch as the upper bound. `test_coupled_dispatch_never_asks_for_more_than_its_own_temperatures_allow` checks the stopping condition on two hot weeks.
 
 ## 7. Spacecraft radiator (`radiator.py`)
 
@@ -159,4 +161,8 @@ In sunlight the panel absorbs the whole hot-case input, albedo included, for the
 - The enclosure is two lumped nodes with no internal gradients. The fan is a simple on/off ventilation fan, and there's no air conditioning or liquid cooling.
 - The orbit transient holds the sunlit input, albedo included, constant over the whole sunlit arc.
 - No soiling or UV degradation of coatings. Organic films degrade under space UV and atomic oxygen, so the radiator section uses standard spacecraft coatings.
+- The sunlight on the box is a constant 0.55 of the horizontal sunlight. That's my assumption, not computed from the box's shape and orientation, and along with the cells' share of the conversion loss it moves the paint result more than anything else I varied (\$13 at 0.4, \$67 at 0.7). Per-face sunlight from the direct and diffuse components would be the next thing to add.
+- The wind at the box comes from treating the reanalysis 10 m wind as an open-field station reading and scaling it with a power law, which is rough that close to the ground.
+- The sky model was checked at two SURFRAD sites for two months, not at Dallas or Houston.
+- The coupled dispatch is a feasible schedule, not the best possible one under derating, and both are perfect-foresight.
 - Two cities (Dallas and Houston), one year of weather and prices.

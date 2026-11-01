@@ -1,41 +1,70 @@
 {
   "dispatch_unconstrained_usd": 319.3,
+  "battery": {
+    "eta_one_way": 0.95,
+    "cell_round_trip": 0.957,
+    "eta_cell": 0.9783,
+    "eta_inverter": 0.9711,
+    "cell_share_of_loss": 0.428
+  },
   "coatings": {
     "dark gray paint": {
       "alpha": 0.75,
       "eps": 0.9,
-      "summer_mean_batt_C": 42.33,
-      "max_batt_C": 55.5,
-      "aging_rate_vs_25C": 2.288,
-      "hours_derated": 1195,
-      "revenue_usd": 263.5
+      "summer_mean_batt_C": 42.19,
+      "max_batt_C": 58.3,
+      "aging_rate_vs_25C": 1.632,
+      "hours_derated": 1138,
+      "revenue_usd": 282.0,
+      "coupling_passes": 7
     },
     "white paint": {
       "alpha": 0.25,
       "eps": 0.9,
-      "summer_mean_batt_C": 40.68,
-      "max_batt_C": 48.7,
-      "aging_rate_vs_25C": 2.009,
-      "hours_derated": 339,
-      "revenue_usd": 303.6
+      "summer_mean_batt_C": 37.37,
+      "max_batt_C": 46.4,
+      "aging_rate_vs_25C": 1.289,
+      "hours_derated": 21,
+      "revenue_usd": 319.0,
+      "coupling_passes": 4
     },
     "ideal radiative cooler": {
       "alpha": 0.04,
       "eps": 0.95,
-      "summer_mean_batt_C": 39.74,
-      "max_batt_C": 46.9,
-      "aging_rate_vs_25C": 1.883,
-      "hours_derated": 208,
-      "revenue_usd": 312.1
+      "summer_mean_batt_C": 34.65,
+      "max_batt_C": 43.7,
+      "aging_rate_vs_25C": 1.145,
+      "hours_derated": 0,
+      "revenue_usd": 319.3,
+      "coupling_passes": 1
     }
   },
   "white_vs_dark": {
-    "summer_mean_drop_C": 1.65,
-    "aging_rate_reduction_pct": 12.2,
+    "revenue_usd": 37.0,
+    "lost_usd": [
+      37.3,
+      0.3
+    ],
+    "summer_mean_drop_C": 4.82,
+    "aging_rate_reduction_pct": 21.0,
     "derated_hours": [
-      1195,
-      339
+      1138,
+      21
     ]
+  },
+  "aging_rate_vs_25C_at_50kJ_mol": {
+    "dark gray paint": 2.03,
+    "white paint": 1.461,
+    "ideal radiative cooler": 1.243
+  },
+  "timing_dark_box_summer": {
+    "share_of_days_derated_in_the_peak_price_hour": 0.783,
+    "median_hour_of_daily_peak_cell_temp": 16.0,
+    "median_hour_of_daily_peak_price": 20.0,
+    "corr_cell_temp_vs_price": 0.353,
+    "mean_price_all_summer_hours": 35.9,
+    "mean_price_in_derated_hours": 50.3,
+    "derated_hours_in_summer": 755
   },
   "fan": {
     "flow_m3_s": 0.05,
@@ -46,31 +75,40 @@
     ],
     "skins": {
       "dark gray paint": {
-        "summer_mean_batt_C": 34.75,
-        "hours_derated": 2,
-        "aging_rate_vs_25C": 1.545,
+        "summer_mean_batt_C": 34.39,
+        "max_batt_C": 45.7,
+        "aging_rate_vs_25C": 1.265,
+        "hours_derated": 3,
         "revenue_usd": 319.3,
-        "fan_hours": 2863,
-        "fan_kwh": 85.9,
-        "fan_cost_usd_at_dam": 3.4
+        "coupling_passes": 1,
+        "fan_hours": 2192,
+        "fan_kwh": 65.8,
+        "fan_cost_usd_at_dam": 2.63,
+        "summer_fan_share_9pm_to_9am": 0.209
       },
       "white paint": {
-        "summer_mean_batt_C": 33.98,
+        "summer_mean_batt_C": 33.24,
+        "max_batt_C": 40.9,
+        "aging_rate_vs_25C": 1.164,
         "hours_derated": 0,
-        "aging_rate_vs_25C": 1.463,
         "revenue_usd": 319.3,
-        "fan_hours": 2162,
-        "fan_kwh": 64.8,
-        "fan_cost_usd_at_dam": 2.64
+        "coupling_passes": 1,
+        "fan_hours": 1365,
+        "fan_kwh": 40.9,
+        "fan_cost_usd_at_dam": 1.84,
+        "summer_fan_share_9pm_to_9am": 0.25
       },
       "ideal radiative cooler": {
-        "summer_mean_batt_C": 33.4,
+        "summer_mean_batt_C": 32.46,
+        "max_batt_C": 39.1,
+        "aging_rate_vs_25C": 1.09,
         "hours_derated": 0,
-        "aging_rate_vs_25C": 1.414,
         "revenue_usd": 319.3,
-        "fan_hours": 1734,
-        "fan_kwh": 52.0,
-        "fan_cost_usd_at_dam": 2.09
+        "coupling_passes": 1,
+        "fan_hours": 542,
+        "fan_kwh": 16.2,
+        "fan_cost_usd_at_dam": 0.81,
+        "summer_fan_share_9pm_to_9am": 0.531
       }
     }
   },
@@ -84,21 +122,22 @@
       "broadband": {
         "alpha": 0.25,
         "eps": 0.9,
-        "summer_mean_batt_C": 40.68,
-        "max_batt_C": 48.7,
-        "aging_rate_vs_25C": 2.009,
-        "hours_derated": 339,
-        "revenue_usd": 303.6
+        "summer_mean_batt_C": 37.37,
+        "max_batt_C": 46.4,
+        "aging_rate_vs_25C": 1.289,
+        "hours_derated": 21,
+        "revenue_usd": 319.0,
+        "coupling_passes": 4
       },
       "gray_model": {
-        "summer_mean_batt_C": 41.18,
-        "hours_derated": 535,
-        "revenue_usd": 293.1
+        "summer_mean_batt_C": 40.94,
+        "hours_derated": 454,
+        "revenue_usd": 309.0
       },
       "two_band_model": {
-        "summer_mean_batt_C": 40.83,
-        "hours_derated": 383,
-        "revenue_usd": 301.0
+        "summer_mean_batt_C": 38.46,
+        "hours_derated": 45,
+        "revenue_usd": 317.9
       }
     },
     "selective ideal cooler": {
@@ -110,77 +149,90 @@
       "broadband": {
         "alpha": 0.04,
         "eps": 0.95,
-        "summer_mean_batt_C": 39.74,
-        "max_batt_C": 46.9,
-        "aging_rate_vs_25C": 1.883,
-        "hours_derated": 208,
-        "revenue_usd": 312.1
+        "summer_mean_batt_C": 34.65,
+        "max_batt_C": 43.7,
+        "aging_rate_vs_25C": 1.145,
+        "hours_derated": 0,
+        "revenue_usd": 319.3,
+        "coupling_passes": 1
       },
       "gray_model": {
-        "summer_mean_batt_C": 40.31,
-        "hours_derated": 298,
-        "revenue_usd": 307.3
+        "summer_mean_batt_C": 38.01,
+        "hours_derated": 32,
+        "revenue_usd": 318.7
       },
       "two_band_model": {
-        "summer_mean_batt_C": 39.85,
-        "hours_derated": 218,
-        "revenue_usd": 311.5
+        "summer_mean_batt_C": 35.1,
+        "hours_derated": 0,
+        "revenue_usd": 319.3
       }
     },
     "hottest_day_surface_minus_air_K": {
       "white paint": [
-        0.0,
-        0.0,
-        -0.4,
-        -2.3,
-        -0.9,
-        -5.0,
-        -4.6,
-        -4.1,
-        1.0,
-        3.5,
-        5.9,
-        7.3,
-        9.0,
-        10.3,
-        9.9,
-        7.1,
-        5.4,
-        4.2,
-        1.8,
-        0.7,
-        -1.6,
-        -3.4,
-        -2.8,
-        -2.3
+        -5.2,
+        -5.7,
+        -6.5,
+        -6.6,
+        -7.1,
+        -7.8,
+        -7.4,
+        -3.7,
+        1.5,
+        5.8,
+        9.3,
+        11.9,
+        13.5,
+        13.9,
+        11.8,
+        8.7,
+        6.3,
+        3.0,
+        -0.1,
+        -3.6,
+        -6.2,
+        -6.3,
+        -5.3,
+        -4.8
       ],
       "selective white": [
-        0.0,
-        0.0,
-        -0.6,
-        -3.0,
-        -1.2,
-        -6.5,
-        -6.0,
-        -5.3,
-        1.2,
-        4.2,
-        7.2,
-        9.1,
-        11.3,
-        13.1,
-        12.6,
-        8.5,
-        6.2,
-        4.7,
-        1.9,
-        0.7,
-        -2.1,
-        -4.2,
-        -3.4,
-        -2.7
+        -7.6,
+        -8.4,
+        -9.8,
+        -10.0,
+        -10.8,
+        -11.7,
+        -11.1,
+        -5.7,
+        1.8,
+        7.8,
+        13.0,
+        17.0,
+        19.6,
+        20.4,
+        16.8,
+        11.6,
+        8.1,
+        3.5,
+        -0.5,
+        -5.2,
+        -8.9,
+        -8.8,
+        -7.2,
+        -6.6
       ]
+    },
+    "hottest_day_selective_minus_white_K": {
+      "coldest": -3.9,
+      "coldest_at_hour_start": 5,
+      "warmest": 6.5,
+      "warmest_at_hour_start": 13
     }
+  },
+  "laminate_map": {
+    "note": "black contour = no change vs plain white paint; laminate emissivity 0.93",
+    "clear_film_change_K": -0.157,
+    "best_change_K": -0.58,
+    "worst_change_K": 5.33
   },
   "absorptance_value": {
     "emissivity": 0.9,
@@ -197,128 +249,197 @@
       0.95
     ],
     "revenue_lost_usd": [
-      7.7,
-      11.2,
-      15.7,
-      21.6,
-      28.8,
-      37.1,
-      46.1,
-      55.8,
-      66.2,
-      77.3
+      0.0,
+      0.0,
+      0.3,
+      2.4,
+      6.5,
+      13.4,
+      24.1,
+      37.3,
+      52.1,
+      68.0
     ],
     "hours_derated": [
-      217,
-      269,
-      339,
-      443,
-      607,
-      768,
-      994,
-      1195,
-      1359,
-      1483
+      0,
+      0,
+      21,
+      57,
+      240,
+      599,
+      899,
+      1138,
+      1377,
+      1537
     ],
     "usd_per_tenth": [
-      3.4,
-      4.5,
-      5.9,
-      7.1,
-      8.3,
-      9.0,
-      9.7,
-      10.4,
-      11.0
-    ]
+      0.0,
+      0.3,
+      2.2,
+      4.1,
+      6.9,
+      10.7,
+      13.2,
+      14.8,
+      15.9
+    ],
+    "white_0.25_to_0.35": {
+      "usd": 2.2,
+      "hours": 36
+    }
   },
   "assumption_sensitivity": {
-    "white_minus_dark_usd_base": 40.1,
+    "white_minus_dark_usd_base": 37.0,
     "sun_factor": {
+      "label": "share of the skin facing the sun",
       "base": 0.55,
       "low": [
         0.4,
-        24.2
+        13.0
       ],
       "high": [
         0.7,
-        58.2
+        67.2
       ]
     },
     "ua_internal": {
+      "label": "cells-to-skin conductance (W/K)",
       "base": 12.0,
       "low": [
         8.0,
-        54.4
-      ],
-      "high": [
-        20.0,
-        25.6
-      ]
-    },
-    "battery_heat_capacity": {
-      "base": 200000.0,
-      "low": [
-        100000.0,
         45.3
       ],
       "high": [
+        20.0,
+        29.0
+      ]
+    },
+    "battery_heat_capacity": {
+      "label": "battery heat capacity (J/K)",
+      "base": 200000.0,
+      "low": [
+        100000.0,
+        41.1
+      ],
+      "high": [
         400000.0,
-        29.5
+        21.6
       ]
     },
     "sky_view": {
+      "label": "view of the sky",
       "base": 0.75,
       "low": [
         0.5,
-        42.7
+        45.3
       ],
       "high": [
         1.0,
-        37.5
+        28.8
       ]
     },
     "area": {
+      "label": "skin area (m^2)",
       "base": 3.0,
       "low": [
         2.0,
-        43.2
+        46.8
       ],
       "high": [
         4.0,
-        38.5
+        32.2
+      ]
+    },
+    "range_usd": [
+      7.9,
+      81.0
+    ],
+    "terrain": {
+      "label": "terrain for the wind at the box",
+      "base": "suburbs",
+      "low": [
+        "country",
+        24.7
+      ],
+      "high": [
+        "city",
+        52.7
+      ]
+    },
+    "cell_round_trip": {
+      "label": "cells' round-trip efficiency",
+      "base": 0.957,
+      "low": [
+        0.978,
+        22.8
+      ],
+      "high": [
+        0.9025,
+        81.0
+      ]
+    },
+    "inverter_heat": {
+      "label": "where the inverter's heat goes",
+      "base": "skin",
+      "low": [
+        "outside",
+        24.4
+      ]
+    },
+    "convection": {
+      "label": "convection coefficient",
+      "base": "2.8+3.0V at the box",
+      "low": [
+        "combined_10m",
+        7.9
+      ]
+    },
+    "clouds": {
+      "label": "cloud model",
+      "base": "layers",
+      "low": [
+        "none",
+        32.5
+      ],
+      "high": [
+        "black_total",
+        42.1
       ]
     }
   },
-  "laminate_map_note": "black contour = no change vs plain white paint; laminate emissivity 0.93",
+  "radiator_environment": {
+    "solar_flux_W_m2": 1423.0,
+    "albedo": 0.27,
+    "earth_ir_W_m2": 260.0
+  },
   "radiator_m2_per_kW_at_300K": {
-    "LEO, sun-shaded, Earth view 0.3": {
-      "optical solar reflector": 3.32,
-      "white thermal-control paint": 3.08,
-      "black paint": 4.44
+    "LEO hot case, edge-on to the sun, Earth view 0.3": {
+      "optical solar reflector": 3.41,
+      "white thermal-control paint": 3.12,
+      "black paint": 4.23
     },
     "LEO hot case, sun 60 deg off normal, Earth view 0.3": {
-      "optical solar reflector": 4.06,
-      "white thermal-control paint": 5.3,
+      "optical solar reflector": 4.11,
+      "white thermal-control paint": 5.62,
       "black paint": "cannot reject heat"
     }
   },
   "radiator_orbit": {
-    "area_m2_per_kW": 4.06,
+    "area_m2_per_kW": 4.11,
     "period_min": 92.4,
     "eclipse_min": 36.0,
     "swing_K": {
       "2_kJ_m2K": [
-        286.1,
+        287.4,
         300.0
       ],
       "5_kJ_m2K": [
-        288.0,
-        299.5
+        289.1,
+        299.6
       ],
       "20_kJ_m2K": [
-        292.6,
-        296.7
+        293.3,
+        297.0
       ]
     }
   }
