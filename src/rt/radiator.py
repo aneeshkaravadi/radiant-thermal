@@ -17,9 +17,13 @@ import numpy as np
 
 from .radiative import SIGMA, Coating
 
-SOLAR_CONSTANT = 1361.0  # W/m^2
-EARTH_IR = 237.0  # W/m^2, orbit-average outgoing longwave
-ALBEDO = 0.30
+# Hot-case design values from NASA's TFAWS 2014 short course "Introduction to On-Orbit Thermal
+# Environments" (Rickman): 1423 W/m^2 is "a typical hot case solar flux design parameter" (slide 34), and
+# albedo 0.27 with 260 W/m^2 of outgoing longwave is the 30-minute "combined maximum" hot case for
+# high-inclination orbits (slide 78). The 30-minute pair suits a radiator, whose time constant is minutes.
+HOT_SOLAR_FLUX = 1423.0  # W/m^2
+HOT_ALBEDO = 0.27
+HOT_EARTH_IR = 260.0  # W/m^2
 
 
 @dataclass(frozen=True)
@@ -27,17 +31,20 @@ class Environment:
     name: str
     sun_cos: float  # cosine of sun incidence on the radiator (0 = edge-on / shaded)
     earth_view: float  # view factor to Earth
+    solar_flux: float = HOT_SOLAR_FLUX  # W/m^2 at 1 au
+    albedo: float = HOT_ALBEDO
+    earth_ir: float = HOT_EARTH_IR  # W/m^2
     distance_au: float = 1.0
 
 
 DEEP_SPACE = Environment("sun-shaded, no planet", 0.0, 0.0)
-LEO_SHADED = Environment("LEO, sun-shaded, Earth view 0.3", 0.0, 0.3)
+LEO_SHADED = Environment("LEO hot case, edge-on to the sun, Earth view 0.3", 0.0, 0.3)
 LEO_HOT = Environment("LEO hot case, sun 60 deg off normal, Earth view 0.3", 0.5, 0.3)
 
 
 def absorbed_flux(c: Coating, env: Environment) -> float:
-    S = SOLAR_CONSTANT / env.distance_au**2
-    return c.alpha_solar * S * env.sun_cos + env.earth_view * (c.eps_ir * EARTH_IR + c.alpha_solar * ALBEDO * S)
+    S = env.solar_flux / env.distance_au**2
+    return c.alpha_solar * S * env.sun_cos + env.earth_view * (c.eps_ir * env.earth_ir + c.alpha_solar * env.albedo * S)
 
 
 def area_per_kw(c: Coating, env: Environment, T_kelvin) -> np.ndarray:
@@ -51,10 +58,12 @@ def equilibrium_temperature(c: Coating, env: Environment, q_internal_w_m2: float
     return float(((absorbed_flux(c, env) + q_internal_w_m2) / (c.eps_ir * SIGMA)) ** 0.25)
 
 
-# Representative spacecraft surfaces (typical beginning-of-life values from thermal-control handbooks).
-OSR = Coating("optical solar reflector", 0.08, 0.80, "representative BOL")
-WHITE_SPACE_PAINT = Coating("white thermal-control paint", 0.20, 0.90, "representative BOL")
-BLACK_PAINT = Coating("black paint", 0.95, 0.88, "representative")
+# Spacecraft surfaces as measured fresh (beginning of life) in Henninger, "Solar Absorptance and Thermal
+# Emittance of Some Common Spacecraft Thermal-Control Coatings", NASA RP-1121 (1984). UV and atomic oxygen
+# raise the absorptance of paints over a mission, so these are best-case values.
+OSR = Coating("optical solar reflector", 0.07, 0.79, "NASA RP-1121: Helios second-surface mirror, silver backing, initial")
+WHITE_SPACE_PAINT = Coating("white thermal-control paint", 0.20, 0.90, "NASA RP-1121: Zerlauts S-13G white paint")
+BLACK_PAINT = Coating("black paint", 0.96, 0.91, "NASA RP-1121: Chemglaze Z306 black paint")
 
 
 # ---------------------------------------------------------------- through an orbit, in and out of eclipse
@@ -90,8 +99,9 @@ def orbit_transient(c: Coating, sunlit_env: Environment, areal_heat_capacity: fl
                     T0: float | None = None):
     """Temperature of a radiator panel (per square meter) over several orbits.
 
-    In sunlight it absorbs ``absorbed_flux(c, sunlit_env)``; in eclipse only Earth's infrared,
-    F_earth eps q_IR. The panel is one thermal mass, c dT/dt = q_int + q_abs - eps sigma T^4,
+    In sunlight it absorbs ``absorbed_flux(c, sunlit_env)`` the whole time, including the full albedo
+    term, although albedo really fades toward the terminator, so this overstates the sunlit input near
+    the ends of the sunlit arc; in eclipse only Earth's infrared, F_earth eps q_IR. The panel is one thermal mass, c dT/dt = q_int + q_abs - eps sigma T^4,
     stepped with RK4, starting at the sunlit equilibrium unless T0 is given.
     Returns time (s), temperature (K) and a sunlit flag for each step.
     """
@@ -99,7 +109,7 @@ def orbit_transient(c: Coating, sunlit_env: Environment, areal_heat_capacity: fl
     f_ecl = eclipse_fraction(altitude_m, beta_deg)
     dt = period / steps_per_orbit
     q_sun = absorbed_flux(c, sunlit_env) + q_internal_w_m2
-    q_dark = sunlit_env.earth_view * c.eps_ir * EARTH_IR + q_internal_w_m2
+    q_dark = sunlit_env.earth_view * c.eps_ir * sunlit_env.earth_ir + q_internal_w_m2
     n = orbits * steps_per_orbit
     t = np.arange(n + 1) * dt
     phase = (t % period) / period

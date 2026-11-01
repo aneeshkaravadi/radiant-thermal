@@ -278,8 +278,17 @@ def test_radiator_closed_form():
     c = rad.Coating("c", 0.2, 0.9)
     A = radiator.area_per_kw(c, radiator.DEEP_SPACE, 300.0)
     assert A == pytest.approx(1000.0 / (0.9 * rad.SIGMA * 300.0**4))
-    T_eq = radiator.equilibrium_temperature(c, radiator.Environment("sun normal", 1.0, 0.0))
+    T_eq = radiator.equilibrium_temperature(c, radiator.Environment("sun normal", 1.0, 0.0, solar_flux=1361.0))
     assert T_eq == pytest.approx((0.2 * 1361 / (0.9 * rad.SIGMA)) ** 0.25)
+
+
+def test_no_eclipse_above_the_critical_beta_nasa_quotes():
+    """NASA's TFAWS 2014 environments course (slide 132) says its 408 km circular orbit sees no eclipse above
+    |beta| of about 71 deg. My cylindrical shadow gives asin(R/r) = 70.0 deg."""
+    critical = np.degrees(np.arcsin(radiator.R_EARTH / (radiator.R_EARTH + 408e3)))
+    assert critical == pytest.approx(71.0, abs=1.5)
+    assert radiator.eclipse_fraction(408e3, critical - 0.5) > 0.0
+    assert radiator.eclipse_fraction(408e3, critical + 0.5) == 0.0
 
 
 
@@ -312,7 +321,7 @@ def test_radiator_balances_energy_over_an_orbit():
     c, env, cap, q = radiator.OSR, radiator.LEO_HOT, 3000.0, 150.0
     t, T, sun = radiator.orbit_transient(c, env, cap, q, orbits=8)
     last = t >= t[-1] - radiator.orbit_period(400e3)
-    q_in = np.where(sun, radiator.absorbed_flux(c, env), env.earth_view * c.eps_ir * radiator.EARTH_IR) + q
+    q_in = np.where(sun, radiator.absorbed_flux(c, env), env.earth_view * c.eps_ir * env.earth_ir) + q
     assert np.mean(q_in[last]) == pytest.approx(np.mean(c.eps_ir * rad.SIGMA * T[last] ** 4), rel=2e-3)
 
 

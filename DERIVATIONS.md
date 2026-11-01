@@ -133,7 +133,9 @@ There is no atmosphere or convection. The radiator emits $\varepsilon\sigma T^4$
 
 $$q_\text{abs} = \alpha S\cos\theta + F_E\,(\varepsilon\, q_{IR} + \alpha\, a\, S)$$
 
-with $S = 1361$ W/m², Earth IR $q_{IR} \approx 237$ W/m², albedo $a \approx 0.30$. The area to reject heat $Q$ is $A = Q/(\varepsilon\sigma T^4 - q_\text{abs})$.
+with hot-case values from NASA's TFAWS 2014 course [Introduction to On-Orbit Thermal Environments](https://tfaws.nasa.gov/wp-content/uploads/On-Orbit_Thermal_Environments_TFAWS_2014.pdf): $S = 1423$ W/m², "a typical hot case solar flux design parameter" (slide 34), and the 30-minute "combined maximum" pair of albedo $a = 0.27$ and Earth IR $q_{IR} = 260$ W/m² (slide 78), since a radiator's time constant is minutes. My first version used the mean solar constant (1361 W/m²) and called it a hot case. The area to reject heat $Q$ is $A = Q/(\varepsilon\sigma T^4 - q_\text{abs})$.
+
+**Coatings.** The optical solar reflector ($\alpha = 0.07$, $\varepsilon = 0.79$, a silver-backed second-surface mirror), white paint (S-13G, 0.20 and 0.90) and black paint (Chemglaze Z306, 0.96 and 0.91) are fresh-sample values from NASA RP-1121 (Henninger 1984). They're beginning-of-life numbers: paints darken under UV over a mission, which makes the radiators bigger.
 
 **Black paint.** In the hot case its absorbed sunlight exceeds its emission at 300 K, so no area is large enough. That is why radiators use low-α, high-ε surfaces.
 
@@ -147,11 +149,14 @@ $$c\,\dot T = q_\text{int} + q_\text{abs}(t) - \varepsilon\sigma T^4$$
 
 with $q_\text{abs}$ switching between the sunlit value and Earth's infrared alone, stepped with RK4.
 
-**Checks:** the eclipse fraction against counting the points of a tilted orbit that fall inside the shadow cylinder, to $10^{-4}$. With no input and no load, the transient against the closed-form radiative cooldown $T = (T_0^{-3} + 3\varepsilon\sigma t/c)^{-1/3}$, to $10^{-9}$. Energy in over an orbit against energy radiated, once the orbits repeat, within 0.2% (`tests/test_models.py`).
+In sunlight the panel absorbs the whole hot-case input, albedo included, for the entire sunlit arc. Real albedo fades toward the terminator, so this overstates the sunlit input near sunrise and sunset and makes the hot end of the swing slightly too hot.
+
+**Checks:** the eclipse fraction against counting the points of a tilted orbit that fall inside the shadow cylinder, to $10^{-4}$, and the β above which a 408 km orbit never enters shadow (70.0°) against the "about 71°" in the TFAWS course (slide 132). With no input and no load, the transient against the closed-form radiative cooldown $T = (T_0^{-3} + 3\varepsilon\sigma t/c)^{-1/3}$, to $10^{-9}$. Energy in over an orbit against energy radiated, once the orbits repeat, within 0.2% (`tests/test_models.py`).
 
 ## Limitations
 
 - Two infrared bands, not a full spectrum. Taking the sky as black outside the 8–13 µm window ignores the partly clear 16–25 µm region in dry air, so it slightly understates the benefit of emitting there.
 - The enclosure is two lumped nodes with no internal gradients. The fan is a simple on/off ventilation fan, and there's no air conditioning or liquid cooling.
+- The orbit transient holds the sunlit input, albedo included, constant over the whole sunlit arc.
 - No soiling or UV degradation of coatings. Organic films degrade under space UV and atomic oxygen, so the radiator section uses standard spacecraft coatings.
 - Two cities (Dallas and Houston), one year of weather and prices.
