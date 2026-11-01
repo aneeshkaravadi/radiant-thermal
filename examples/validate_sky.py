@@ -23,7 +23,7 @@ models = {"clear sky only": "none", "first model: total cloud, black": "black_to
 out = {"cloud_effect_low_mid_high": list(rad.CLOUD_EFFECT),
        "refit_on_january": [round(float(k), 3) for k in surfrad.fit_cloud_effects(jan)],
        "refit_on_all_hours": [round(float(k), 3) for k in surfrad.fit_cloud_effects(d)],
-       "hours": {f"{st}_{mo:02d}": int(len(g)) for (st, mo), g in d.groupby(["station", "month"])},
+       "hours": {f"{st}_{mo:02d}": len(g) for (st, mo), g in d.groupby(["station", "month"])},
        "station_inputs": {}, "open_meteo_inputs": {}}
 for label, clouds in models.items():
     out["station_inputs"][label] = surfrad.error_stats(d, surfrad.modeled_longwave(d, clouds=clouds))

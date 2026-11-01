@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import linprog
 
-
 # Mean battery round-trip efficiency (energy out over energy in at the battery's own terminals) of the
 # 22 home batteries HTW Berlin measured in its Stromspeicher-Inspektion 2025, p. 25: 95.7 %.
 CELL_ROUND_TRIP_HTW_2025 = 0.957

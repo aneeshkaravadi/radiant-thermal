@@ -20,11 +20,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from rt import coupled
+from rt import coupled, radiator
 from rt import dispatch as dp
 from rt import enclosure as enc
 from rt import radiative as rad
-from rt import radiator
 
 ROOT = Path(__file__).resolve().parents[1]
 FIG = ROOT / "docs" / "figures"
@@ -415,7 +414,7 @@ def part_radiator(results):
     results["radiator_orbit"] = {"area_m2_per_kW": round(area, 2), "period_min": round(period / 60, 1),
                                  "eclipse_min": round(radiator.eclipse_fraction(400e3) * period / 60, 1), "swing_K": {}}
     for cap, col in ((2000.0, "C3"), (5000.0, "C1"), (20000.0, "C0")):
-        t, T, sun = radiator.orbit_transient(radiator.OSR, radiator.LEO_HOT, cap, q_int, orbits=6)
+        t, T, _ = radiator.orbit_transient(radiator.OSR, radiator.LEO_HOT, cap, q_int, orbits=6)
         last = t >= t[-1] - 3 * period
         ax.plot((t[last] - t[last][0]) / 60, T[last] - 273.15, color=col, label=f"{cap / 1000:g} kJ/m^2K")
         one = t >= t[-1] - period

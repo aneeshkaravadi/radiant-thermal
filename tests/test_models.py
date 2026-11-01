@@ -5,12 +5,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rt import coupled
+from rt import coupled, radiator, surfrad
 from rt import dispatch as dp
 from rt import enclosure as enc
 from rt import radiative as rad
-from rt import radiator
-from rt import surfrad
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -355,7 +353,7 @@ def test_coupled_dispatch_never_asks_for_more_than_its_own_temperatures_allow():
 
 
 def test_reusing_unchanged_days_gives_the_same_dispatch():
-    w, p = august_slice(days=6)
+    _, p = august_slice(days=6)
     b = dp.Battery()
     free = dp.dispatch(p, b)
     cap = np.full(len(p), b.power_kw)
